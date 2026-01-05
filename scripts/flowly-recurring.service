@@ -1,0 +1,15 @@
+[Unit]
+Description=Flowly Recurring Tasks Processor
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www/flowly
+ExecStart=/usr/bin/node /var/www/flowly/scripts/process-recurring-tasks.js
+User=root
+Environment=NODE_ENV=production
+EnvironmentFile=/var/www/flowly/.env
+
+[Install]
+WantedBy=multi-user.target
+

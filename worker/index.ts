@@ -1,0 +1,1 @@
+console.log("Worker scaffold ready");

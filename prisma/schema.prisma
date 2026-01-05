@@ -1,0 +1,267 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  image        String?
+  passwordHash String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  // User preferences
+  settings     Json?     // { theme, defaultView, pomodoroSettings, etc. }
+  accounts     Account[]
+  sessions     Session[]
+  lists        List[]
+  tasks        Task[]    @relation("TaskOwner")
+  tags         Tag[]
+}
+
+enum ListType {
+  PROJECT
+  CHECKLIST
+}
+
+model List {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  type        ListType @default(PROJECT)
+  ownerId     String
+  parentId    String?  // For nested projects (sub-projects)
+  owner       User     @relation(fields: [ownerId], references: [id])
+  parent      List?    @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    List[]   @relation("ProjectHierarchy")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Status {
+  TODO
+  DOING
+  DONE
+  CANCELED
+}
+
+model Task {
+  id                 String    @id @default(cuid())
+  listId             String
+  ownerId            String
+  title              String
+  notes              String?
+  status             Status    @default(TODO)
+  priority           Priority  @default(MEDIUM)
+  dueAt              DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  completedAt        DateTime? // When task was completed
+  // Recurrence fields
+  recurrenceRule     String?   // 'daily', 'weekly', 'monthly', 'yearly'
+  recurrenceInterval Int       @default(1) // e.g., every 2 weeks
+  nextDueAt          DateTime? // Next occurrence date
+  // Time tracking
+  estimatedMinutes   Int?      // Estimated time to complete
+  actualMinutes      Int       @default(0) // Actual time spent
+  // Organization
+  order              Int       @default(0) // For drag-drop ordering
+
+  list        List        @relation(fields: [listId], references: [id])
+  owner       User        @relation("TaskOwner", fields: [ownerId], references: [id])
+  subtasks    Subtask[]
+  comments    Comment[]
+  attachments Attachment[]
+  tags        TaskTag[]
+
+  @@index([ownerId, status])
+  @@index([dueAt])
+}
+
+// ============================================
+// Tags/Labels System
+// ============================================
+model Tag {
+  id        String    @id @default(cuid())
+  name      String
+  color     String    @default("#6366f1") // Default indigo
+  ownerId   String
+  createdAt DateTime  @default(now())
+
+  owner User      @relation(fields: [ownerId], references: [id])
+  tasks TaskTag[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+// ============================================
+// Focus Sessions (Pomodoro)
+// ============================================
+model FocusSession {
+  id          String    @id @default(cuid())
+  ownerId     String
+  taskId      String?   // Optional - can focus without a specific task
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  duration    Int       @default(25) // Minutes planned
+  actualMinutes Int?    // Actual minutes completed
+  completed   Boolean   @default(false)
+  type        String    @default("focus") // 'focus', 'short_break', 'long_break'
+  createdAt   DateTime  @default(now())
+
+  @@index([ownerId, createdAt(sort: Desc)])
+}
+
+// ============================================
+// Comments System
+// ============================================
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// ============================================
+// Activity History
+// ============================================
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String   // 'CREATE', 'UPDATE', 'DELETE'
+  entityType  String   // 'task', 'list', 'subtask', 'comment'
+  entityId    String
+  entityTitle String?  // Cached title for display
+  changes     Json?    // For updates: { field: { old: x, new: y } }
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([entityType])
+}
+
+// ============================================
+// File Attachments
+// ============================================
+model Attachment {
+  id           String   @id @default(cuid())
+  filename     String   // UUID filename on disk
+  originalName String   // Original uploaded filename
+  mimetype     String
+  size         Int      // bytes
+  path         String   // storage path
+  entityType   String   // 'task', 'list'
+  entityId     String
+  taskId       String?  // Optional direct relation to task
+  createdAt    DateTime @default(now())
+
+  task Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+}
+
+// ============================================
+// Webhooks
+// ============================================
+model Webhook {
+  id              String       @id @default(cuid())
+  url             String
+  secret          String       // For HMAC signature verification
+  events          Json         // ['task.created', 'task.updated', ...]
+  isActive        Boolean      @default(true)
+  lastTriggeredAt DateTime?
+  failureCount    Int          @default(0)
+  createdAt       DateTime     @default(now())
+
+  logs WebhookLog[]
+}
+
+model WebhookLog {
+  id             String   @id @default(cuid())
+  webhookId      String
+  event          String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?
+  success        Boolean
+  createdAt      DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+}
+
+model Subtask {
+  id        String   @id @default(cuid())
+  taskId    String
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

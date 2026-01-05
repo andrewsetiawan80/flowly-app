@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowly-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/flowly
+      - AUTH_SECRET=${AUTH_SECRET:-supersecretkey123changeme}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - flowly-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: flowly-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flowly
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flowly-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: flowly-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - flowly-network
+
+volumes:
+  db-data:
+  redis-data:
+
+networks:
+  flowly-network:
+    driver: bridge

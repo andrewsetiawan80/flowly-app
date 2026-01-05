@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Flowly recurring tasks daily
+
+[Timer]
+OnCalendar=*-*-* 00:05:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
