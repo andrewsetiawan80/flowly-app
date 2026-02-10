@@ -152,9 +152,9 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                   <Command.Group heading="Quick Actions" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <Command.Item
                       onSelect={() => runCommand(() => onCreateTask?.())}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-500">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                         <Plus className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-medium">New Task</span>
@@ -166,35 +166,35 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                   <Command.Group heading="Navigation" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/dashboard"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <Flame className="h-4 w-4" />
                       <span>Dashboard</span>
                     </Command.Item>
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/tasks"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <CheckCircle2 className="h-4 w-4" />
                       <span>All Tasks</span>
                     </Command.Item>
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/myday"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <CalendarDays className="h-4 w-4" />
                       <span>My Day</span>
                     </Command.Item>
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/today"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <Calendar className="h-4 w-4" />
                       <span>Next 7 Days</span>
                     </Command.Item>
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/premium"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <Gem className="h-4 w-4" />
                       <span>Go Premium</span>
@@ -208,7 +208,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                         <Command.Item
                           key={list.id}
                           onSelect={() => runCommand(() => router.push(`/lists/${list.id}`))}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                         >
                           <List className="h-4 w-4" />
                           <span>{list.name}</span>
@@ -224,7 +224,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                         <Command.Item
                           key={task.id}
                           onSelect={() => runCommand(() => router.push(`/tasks?task=${task.id}`))}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           <span className="truncate">{task.title}</span>
@@ -237,7 +237,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                   <Command.Group heading="Settings" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
                     <Command.Item
                       onSelect={() => runCommand(() => setTheme(theme === "dark" ? "light" : "dark"))}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-orange-500/10 aria-selected:text-orange-600 dark:aria-selected:text-orange-400"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                       <span>Toggle {theme === "dark" ? "Light" : "Dark"} Mode</span>

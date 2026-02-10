@@ -17,12 +17,88 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   // User preferences
-  settings     Json?     // { theme, defaultView, pomodoroSettings, etc. }
+  settings      Json?     // { theme, defaultView, pomodoroSettings, slackWebhookUrl, etc. }
+  calendarToken String?   @unique // Token for iCal feed URL
   accounts     Account[]
   sessions     Session[]
   lists        List[]
   tasks        Task[]    @relation("TaskOwner")
+  assignedTasks Task[]   @relation("TaskAssignee")
   tags         Tag[]
+  // Workspace relations
+  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  memberships      WorkspaceMember[]
+  invitationsSent  Invitation[]      @relation("InvitationSender")
+}
+
+// ============================================
+// Workspace & Teams
+// ============================================
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  slug        String   @unique // URL-friendly identifier
+  color       String?  @default("#6366f1")
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members     WorkspaceMember[]
+  invitations Invitation[]
+  lists       List[]
+  tasks       Task[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  workspaceId String
+  email       String           // Invitee email
+  role        WorkspaceRole    @default(MEMBER)
+  status      InvitationStatus @default(PENDING)
+  token       String           @unique @default(cuid()) // Unique invite token
+  invitedById String
+  expiresAt   DateTime         // When the invitation expires
+  createdAt   DateTime         @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  @@index([email])
+  @@index([workspaceId])
+  @@index([token])
 }
 
 enum ListType {
@@ -31,19 +107,25 @@ enum ListType {
 }
 
 model List {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
   color       String?
-  type        ListType @default(PROJECT)
+  type        ListType   @default(PROJECT)
   ownerId     String
-  parentId    String?  // For nested projects (sub-projects)
-  owner       User     @relation(fields: [ownerId], references: [id])
-  parent      List?    @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    List[]   @relation("ProjectHierarchy")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  parentId    String?    // For nested projects (sub-projects)
+  workspaceId String?    // null = personal project (backward compat)
+  owner       User       @relation(fields: [ownerId], references: [id])
+  parent      List?      @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    List[]     @relation("ProjectHierarchy")
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   tasks       Task[]
+
+  @@index([ownerId])
+  @@index([parentId])
+  @@index([workspaceId])
 }
 
 enum Priority {
@@ -72,6 +154,9 @@ model Task {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   completedAt        DateTime? // When task was completed
+  // Assignment
+  assigneeId         String?   // User assigned to this task
+  workspaceId        String?   // null = personal task
   // Recurrence fields
   recurrenceRule     String?   // 'daily', 'weekly', 'monthly', 'yearly'
   recurrenceInterval Int       @default(1) // e.g., every 2 weeks
@@ -84,13 +169,96 @@ model Task {
 
   list        List        @relation(fields: [listId], references: [id])
   owner       User        @relation("TaskOwner", fields: [ownerId], references: [id])
-  subtasks    Subtask[]
-  comments    Comment[]
-  attachments Attachment[]
-  tags        TaskTag[]
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  workspace   Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subtasks      Subtask[]
+  comments      Comment[]
+  attachments   Attachment[]
+  tags          TaskTag[]
+  dependsOn     TaskDependency[] @relation("DependentTask")
+  dependedOnBy  TaskDependency[] @relation("DependencyTask")
 
   @@index([ownerId, status])
   @@index([dueAt])
+  @@index([listId])
+  @@index([assigneeId])
+  @@index([workspaceId])
+}
+
+// ============================================
+// Task Dependencies
+// ============================================
+enum DependencyType {
+  BLOCKS       // taskId blocks dependsOnTaskId (finish-to-start)
+  BLOCKED_BY   // taskId is blocked by dependsOnTaskId
+}
+
+model TaskDependency {
+  id              String         @id @default(cuid())
+  taskId          String         // The dependent task
+  dependsOnTaskId String         // The prerequisite task
+  type            DependencyType @default(BLOCKS)
+  createdAt       DateTime       @default(now())
+
+  task       Task @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn  Task @relation("DependencyTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@index([taskId])
+  @@index([dependsOnTaskId])
+}
+
+// ============================================
+// Project Templates
+// ============================================
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  ownerId     String
+  data        Json     // Serialized project structure (tasks, subtasks)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+// ============================================
+// Automations Engine
+// ============================================
+model Automation {
+  id              String    @id @default(cuid())
+  name            String
+  ownerId         String
+  workspaceId     String?
+  isActive        Boolean   @default(true)
+  trigger         Json      // { event: 'task.created', conditions: [...] }
+  action          Json      // { type: 'change_status', params: { status: 'DOING' } }
+  lastTriggeredAt DateTime?
+  triggerCount    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  logs AutomationLog[]
+
+  @@index([ownerId])
+  @@index([isActive])
+}
+
+model AutomationLog {
+  id           String   @id @default(cuid())
+  automationId String
+  event        String
+  success      Boolean
+  error        String?
+  data         Json?    // snapshot of triggered entity
+  createdAt    DateTime @default(now())
+
+  automation Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+  @@index([createdAt(sort: Desc)])
 }
 
 // ============================================
@@ -230,6 +398,8 @@ model Subtask {
   updatedAt DateTime @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model Account {

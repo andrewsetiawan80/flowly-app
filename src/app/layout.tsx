@@ -5,6 +5,10 @@ import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/sidebar";
 import { GlobalProviders } from "@/components/global-providers";
 import { FloatingAddButton } from "@/components/floating-add-button";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { WorkspaceProvider } from "@/lib/workspace-context";
+import { SidebarProvider } from "@/lib/sidebar-context";
+import { MainContent } from "@/components/main-content";
 
 export const metadata = {
   title: "Flowly",
@@ -13,10 +17,10 @@ export const metadata = {
   themeColor: "#f97316",
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/logo.png', type: 'image/png' },
     ],
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
@@ -47,22 +51,22 @@ export default async function RootLayout({
         <AuthSessionProvider>
           <ThemeProvider>
             <GlobalProviders>
-              {session?.user ? (
-                <div className="min-h-screen overflow-x-hidden">
-                  <Sidebar />
-                  {/* Main content - responsive padding */}
-                  <main className="min-h-screen pt-16 pb-20 lg:pt-0 lg:pb-0 lg:pl-[288px] bg-background transition-all duration-300">
-                    <div className="w-full max-w-4xl mx-auto py-4 px-3 sm:py-6 sm:px-6 lg:py-10 lg:px-8 xl:px-12">
+              <WorkspaceProvider>
+                <SidebarProvider>
+                  {session?.user ? (
+                    <div className="min-h-screen overflow-x-hidden">
+                      <Sidebar />
+                      <MainContent>{children}</MainContent>
+                      <FloatingAddButton />
+                      <MobileBottomNav />
+                    </div>
+                  ) : (
+                    <div className="min-h-screen">
                       {children}
                     </div>
-                  </main>
-                  <FloatingAddButton />
-                </div>
-              ) : (
-                <div className="min-h-screen">
-                  {children}
-                </div>
-              )}
+                  )}
+                </SidebarProvider>
+              </WorkspaceProvider>
             </GlobalProviders>
           </ThemeProvider>
         </AuthSessionProvider>

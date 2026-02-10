@@ -83,7 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
+      <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
         <AnimatePresence>
           {toasts.map((toast) => {
             const Icon = icons[toast.type];
@@ -102,7 +102,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {toast.action && (
                   <button
                     onClick={toast.action.onClick}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/10 rounded-lg hover:bg-orange-500/20 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
                   >
                     <Undo2 className="h-3 w-3" />
                     {toast.action.label}

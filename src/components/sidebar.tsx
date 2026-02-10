@@ -28,12 +28,20 @@ import {
   BarChart3,
   Timer,
   Keyboard,
-} from "lucide-react";
+  Users,
+    Settings,
+    Building2,
+    GanttChart,
+    Zap,
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { REFRESH_EVENTS } from "@/lib/events";
+import { useWorkspace } from "@/lib/workspace-context";
+import { useSidebar } from "@/lib/sidebar-context";
+import { NotificationCenter } from "@/components/notification-center";
 
 interface Project {
   id: string;
@@ -190,15 +198,11 @@ export function Sidebar() {
   const [flatLists, setFlatLists] = useState<Project[]>([]);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebar();
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setMounted(true);
-    const savedCollapsed = localStorage.getItem("sidebar-collapsed");
-    if (savedCollapsed) {
-      setCollapsed(JSON.parse(savedCollapsed));
-    }
     const savedExpanded = localStorage.getItem("sidebar-expanded-projects");
     if (savedExpanded) {
       setExpandedProjects(new Set(JSON.parse(savedExpanded)));
@@ -249,12 +253,6 @@ export function Sidebar() {
     await signOut({ callbackUrl: "/signin" });
   };
 
-  const toggleCollapsed = () => {
-    const newState = !collapsed;
-    setCollapsed(newState);
-    localStorage.setItem("sidebar-collapsed", JSON.stringify(newState));
-  };
-
   const toggleExpand = (id: string) => {
     setExpandedProjects(prev => {
       const next = new Set(prev);
@@ -280,9 +278,15 @@ export function Sidebar() {
 
   const viewItems = [
     { href: "/board", label: "Kanban Board", icon: Columns3 },
+    { href: "/table", label: "Table View", icon: List },
+    { href: "/timeline", label: "Timeline", icon: GanttChart },
     { href: "/calendar", label: "Calendar", icon: Calendar },
     { href: "/stats", label: "Statistics", icon: BarChart3 },
+    { href: "/automations", label: "Automations", icon: Zap },
   ];
+
+  const { workspaces, activeWorkspace, setActiveWorkspaceId, isPersonalMode } = useWorkspace();
+  const [wsDropdownOpen, setWsDropdownOpen] = useState(false);
 
   if (!mounted) return null;
 
@@ -292,13 +296,13 @@ export function Sidebar() {
     <div className="flex-1 flex flex-col py-6 px-4 space-y-6 overflow-y-auto">
       {/* App Branding */}
       <div className={cn("flex items-center px-2", collapsed ? "justify-center" : "justify-between")}>
-        <Link href="/dashboard" className="flex items-center gap-3 group">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
           <motion.div 
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 shadow-lg shadow-orange-500/30"
-            whileHover={{ scale: 1.05, rotate: 5 }}
+            className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden flex-shrink-0"
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Flame className="h-5 w-5 text-white" />
+            <img src="/logo.png" alt="Flowly" className="h-10 w-10 object-contain" />
           </motion.div>
           {!collapsed && (
             <motion.h1 
@@ -306,7 +310,7 @@ export function Sidebar() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 dark:from-orange-400 dark:via-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent">
                 Flowly
               </span>
             </motion.h1>
@@ -314,18 +318,21 @@ export function Sidebar() {
         </Link>
 
         {!collapsed && (
-          <motion.button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            {theme === "dark" ? (
-              <Moon className="h-4 w-4 text-amber-400" />
-            ) : (
-              <Sun className="h-4 w-4 text-orange-500" />
-            )}
-          </motion.button>
+          <div className="flex items-center gap-1">
+            <NotificationCenter />
+            <motion.button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              {theme === "dark" ? (
+                <Moon className="h-4 w-4 text-primary" />
+              ) : (
+                <Sun className="h-4 w-4 text-primary" />
+              )}
+            </motion.button>
+          </div>
         )}
       </div>
 
@@ -358,26 +365,102 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Premium CTA */}
-      {!collapsed ? (
-        <div className="px-2">
-          <Button 
-            className="w-full h-11 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:via-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-orange-500/25 rounded-xl"
-            onClick={() => router.push("/premium")}
+      {/* Workspace Switcher */}
+      {!collapsed && (
+        <div className="px-2 relative">
+          <button
+            onClick={() => setWsDropdownOpen(!wsDropdownOpen)}
+            className="flex items-center gap-2 w-full rounded-xl px-3 py-2.5 bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-colors"
           >
-            <Gem className="mr-2 h-4 w-4" />
-            Go Premium
-          </Button>
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white text-xs font-bold flex-shrink-0"
+              style={{ backgroundColor: activeWorkspace?.color || "hsl(var(--primary))" }}
+            >
+              {activeWorkspace ? activeWorkspace.name[0].toUpperCase() : "P"}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-xs font-semibold truncate">
+                {activeWorkspace?.name || "Personal"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {activeWorkspace ? `${activeWorkspace._count?.members || 1} members` : "Solo workspace"}
+              </p>
+            </div>
+            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", wsDropdownOpen && "rotate-180")} />
+          </button>
+
+          <AnimatePresence>
+            {wsDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute left-2 right-2 top-full mt-1 z-50 rounded-xl bg-white dark:bg-gray-800 border border-black/10 dark:border-white/10 shadow-xl overflow-hidden"
+              >
+                <div className="max-h-48 overflow-y-auto py-1">
+                  <button
+                    onClick={() => { setActiveWorkspaceId(null); setWsDropdownOpen(false); }}
+                    className={cn(
+                      "flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
+                      isPersonalMode && "bg-primary/5 text-primary"
+                    )}
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary text-[10px] font-bold">P</div>
+                    <span className="font-medium">Personal</span>
+                  </button>
+                  {workspaces.map((ws) => (
+                    <button
+                      key={ws.id}
+                      onClick={() => { setActiveWorkspaceId(ws.id); setWsDropdownOpen(false); }}
+                      className={cn(
+                        "flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
+                        activeWorkspace?.id === ws.id && "bg-primary/5 text-primary"
+                      )}
+                    >
+                      <div
+                        className="flex h-6 w-6 items-center justify-center rounded text-white text-[10px] font-bold"
+                        style={{ backgroundColor: ws.color || "#6366f1" }}
+                      >
+                        {ws.name[0].toUpperCase()}
+                      </div>
+                      <span className="font-medium truncate">{ws.name}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{ws._count?.members || 1}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-black/5 dark:border-white/5 p-1">
+                  <button
+                    onClick={() => { router.push("/workspaces/new"); setWsDropdownOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Create workspace</span>
+                  </button>
+                  {activeWorkspace && (
+                    <button
+                      onClick={() => { router.push(`/workspaces/${activeWorkspace.id}/settings`); setWsDropdownOpen(false); }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                      <span>Workspace settings</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      ) : (
-        <div className="flex justify-center">
-          <Button 
-            size="icon"
-            className="h-10 w-10 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl"
-            onClick={() => router.push("/premium")}
+      )}
+
+      {collapsed && (
+        <div className="flex justify-center px-2">
+          <button
+            onClick={() => setWsDropdownOpen(!wsDropdownOpen)}
+            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            title={activeWorkspace?.name || "Personal"}
           >
-            <Gem className="h-4 w-4" />
-          </Button>
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
       )}
 
@@ -395,12 +478,12 @@ export function Sidebar() {
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 collapsed && "justify-center px-2",
                 isActive
-                  ? "bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/10"
+                  ? "bg-primary/10 text-primary border border-primary/10"
                   : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
               )}
               title={collapsed ? item.label : undefined}
             >
-              <Icon className={cn("h-[18px] w-[18px] flex-shrink-0", isActive && "text-orange-500")} />
+              <Icon className={cn("h-[18px] w-[18px] flex-shrink-0", isActive && "text-primary")} />
               {!collapsed && <span className="flex-1">{item.label}</span>}
             </Link>
           );
@@ -412,12 +495,12 @@ export function Sidebar() {
             "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
             collapsed && "justify-center px-2",
             pathname === "/tasks"
-              ? "bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/10"
+              ? "bg-primary/10 text-primary border border-primary/10"
               : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
           )}
           title={collapsed ? "All my tasks" : undefined}
         >
-          <List className={cn("h-[18px] w-[18px] flex-shrink-0", pathname === "/tasks" && "text-orange-500")} />
+          <List className={cn("h-[18px] w-[18px] flex-shrink-0", pathname === "/tasks" && "text-primary")} />
           {!collapsed && (
             <>
               <span className="flex-1">All my tasks</span>
@@ -556,7 +639,15 @@ export function Sidebar() {
               <X className="h-5 w-5" />
             </button>
             {sidebarContent}
-            <div className="border-t border-black/5 dark:border-white/5 p-4 pb-safe">
+            <div className="border-t border-black/5 dark:border-white/5 p-4 pb-safe space-y-1">
+              <Link
+                href="/settings"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground transition-all active:scale-[0.98]"
+                onClick={() => setMobileOpen(false)}
+              >
+                <Settings className="h-[18px] w-[18px]" />
+                <span>Settings</span>
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all active:scale-[0.98]"
@@ -578,7 +669,19 @@ export function Sidebar() {
       >
         {sidebarContent}
         
-        <div className="border-t border-black/5 dark:border-white/5 p-4">
+        <div className="border-t border-black/5 dark:border-white/5 p-4 space-y-1">
+          <Link
+            href="/settings"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground transition-all",
+              collapsed && "justify-center",
+              pathname === "/settings" && "bg-primary/10 text-primary"
+            )}
+            title={collapsed ? "Settings" : undefined}
+          >
+            <Settings className="h-[18px] w-[18px]" />
+            {!collapsed && <span>Settings</span>}
+          </Link>
           <button
             onClick={handleSignOut}
             className={cn(

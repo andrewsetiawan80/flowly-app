@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Priority, Status } from "@prisma/client";
 import { logActivity } from "@/lib/activity";
 import { triggerWebhooks } from "@/lib/webhooks";
+import { triggerAutomations } from "@/lib/automations";
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic';
@@ -12,11 +13,40 @@ export const revalidate = 0;
 export async function GET(request: NextRequest) {
   const me = await getCurrentUser(request);
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  
+
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "100"), 200);
+  const cursor = url.searchParams.get("cursor");
+  const listId = url.searchParams.get("listId");
+  const status = url.searchParams.get("status") as Status | null;
+  const priority = url.searchParams.get("priority") as Priority | null;
+  const workspaceId = url.searchParams.get("workspaceId");
+  const assignedToMe = url.searchParams.get("assignedToMe") === "true";
+
+  // Build where clause based on context
+  const where: any = {};
+  if (workspaceId) {
+    // Workspace view: show all tasks in workspace (user must be a member)
+    where.workspaceId = workspaceId;
+  } else if (assignedToMe) {
+    // "My Work" view: tasks assigned to me across all workspaces + personal tasks
+    where.OR = [
+      { assigneeId: me.id },
+      { ownerId: me.id, workspaceId: null },
+    ];
+  } else {
+    // Default personal view
+    where.ownerId = me.id;
+    where.workspaceId = null;
+  }
+  if (listId) where.listId = listId;
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+
   const tasks = await prisma.task.findMany({
-    where: {
-      ownerId: me.id,
-    },
+    where,
+    take: limit + 1, // Fetch one extra to determine if there are more
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       list: {
         select: {
@@ -24,6 +54,9 @@ export async function GET(request: NextRequest) {
           name: true,
           color: true,
         },
+      },
+      assignee: {
+        select: { id: true, name: true, email: true, image: true },
       },
       subtasks: {
         orderBy: { order: "asc" },
@@ -38,7 +71,14 @@ export async function GET(request: NextRequest) {
       { createdAt: "desc" },
     ],
   });
-  
+
+  // Determine if there's a next page
+  let nextCursor: string | null = null;
+  if (tasks.length > limit) {
+    const nextItem = tasks.pop();
+    nextCursor = nextItem!.id;
+  }
+
   // Add subtask completion stats
   const tasksWithStats = tasks.map((task: typeof tasks[number]) => ({
     ...task,
@@ -46,7 +86,7 @@ export async function GET(request: NextRequest) {
     subtaskCompletedCount: task.subtasks.filter((s: { completed: boolean }) => s.completed).length,
   }));
   
-  return NextResponse.json({ tasks: tasksWithStats });
+  return NextResponse.json({ tasks: tasksWithStats, nextCursor });
 }
 
 export async function POST(request: NextRequest) {
@@ -55,7 +95,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, notes, priority, dueAt, listId, recurrenceRule, recurrenceInterval } = body;
+    const { title, notes, priority, dueAt, listId, assigneeId, recurrenceRule, recurrenceInterval } = body;
 
     if (!title || !listId) {
       return NextResponse.json(
@@ -64,9 +104,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify list belongs to user
+    // Verify list belongs to user or workspace
     const list = await prisma.list.findFirst({
-      where: { id: listId, ownerId: me.id },
+      where: {
+        id: listId,
+        OR: [
+          { ownerId: me.id },
+          { workspace: { members: { some: { userId: me.id } } } },
+        ],
+      },
     });
 
     if (!list) {
@@ -87,6 +133,8 @@ export async function POST(request: NextRequest) {
         dueAt: dueAt ? new Date(dueAt) : null,
         listId,
         ownerId: me.id,
+        assigneeId: assigneeId || null,
+        workspaceId: list.workspaceId || null,
         status: "TODO",
         recurrenceRule: recurrenceRule || null,
         recurrenceInterval: recurrenceInterval || 1,
@@ -99,17 +147,21 @@ export async function POST(request: NextRequest) {
             color: true,
           },
         },
+        assignee: {
+          select: { id: true, name: true, email: true, image: true },
+        },
       },
     });
 
-    // Log activity and trigger webhooks
-    await logActivity({
+    // Fire-and-forget: don't block response
+    logActivity({
       action: "CREATE",
       entityType: "task",
       entityId: task.id,
       entityTitle: task.title,
-    });
-    await triggerWebhooks("task.created", { task });
+    }).catch(() => {});
+    triggerWebhooks("task.created", { task }).catch(() => {});
+    triggerAutomations("task.created", task, task.ownerId).catch(() => {});
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (error) {
@@ -133,9 +185,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Task id is required" }, { status: 400 });
     }
 
-    // Verify task belongs to user
+    // Verify task belongs to user or workspace
     const existingTask = await prisma.task.findFirst({
-      where: { id, ownerId: me.id },
+      where: {
+        id,
+        OR: [
+          { ownerId: me.id },
+          { workspace: { members: { some: { userId: me.id } } } },
+        ],
+      },
     });
 
     if (!existingTask) {
@@ -143,12 +201,22 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updateData: any = {};
-    if (status !== undefined) updateData.status = status as Status;
+    if (status !== undefined) {
+      updateData.status = status as Status;
+      // Track completedAt
+      if (status === "DONE" && existingTask.status !== "DONE") {
+        updateData.completedAt = new Date();
+      } else if (status !== "DONE" && existingTask.status === "DONE") {
+        updateData.completedAt = null;
+      }
+    }
     if (updates.title !== undefined) updateData.title = updates.title;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.priority !== undefined) updateData.priority = updates.priority as Priority;
     if (updates.dueAt !== undefined) updateData.dueAt = updates.dueAt ? new Date(updates.dueAt) : null;
     if (updates.listId !== undefined) updateData.listId = updates.listId;
+    if (updates.order !== undefined) updateData.order = updates.order;
+    if (updates.assigneeId !== undefined) updateData.assigneeId = updates.assigneeId || null;
     // Recurrence fields
     if (updates.recurrenceRule !== undefined) updateData.recurrenceRule = updates.recurrenceRule || null;
     if (updates.recurrenceInterval !== undefined) updateData.recurrenceInterval = updates.recurrenceInterval || 1;
@@ -179,19 +247,19 @@ export async function PATCH(request: NextRequest) {
       changes.priority = { old: existingTask.priority, new: updates.priority };
     }
 
-    // Log activity
-    await logActivity({
+    // Fire-and-forget
+    logActivity({
       action: "UPDATE",
       entityType: "task",
       entityId: task.id,
       entityTitle: task.title,
       changes: Object.keys(changes).length > 0 ? changes : undefined,
-    });
-
-    // Trigger webhooks
-    await triggerWebhooks("task.updated", { task, changes });
+    }).catch(() => {});
+    triggerWebhooks("task.updated", { task, changes }).catch(() => {});
+    triggerAutomations("task.updated", task, task.ownerId).catch(() => {});
     if (status === "DONE" && existingTask.status !== "DONE") {
-      await triggerWebhooks("task.completed", { task });
+      triggerWebhooks("task.completed", { task }).catch(() => {});
+      triggerAutomations("task.completed", task, task.ownerId).catch(() => {});
     }
 
     return NextResponse.json({ task });
@@ -225,18 +293,20 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
+    // Subtasks cascade-delete automatically via schema
     await prisma.task.delete({
       where: { id },
     });
 
-    // Log activity and trigger webhooks
-    await logActivity({
+    // Fire-and-forget
+    logActivity({
       action: "DELETE",
       entityType: "task",
       entityId: id,
       entityTitle: existingTask.title,
-    });
-    await triggerWebhooks("task.deleted", { task: existingTask });
+    }).catch(() => {});
+    triggerWebhooks("task.deleted", { task: existingTask }).catch(() => {});
+    triggerAutomations("task.deleted", existingTask, existingTask.ownerId).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

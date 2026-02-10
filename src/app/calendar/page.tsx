@@ -218,7 +218,7 @@ export default function CalendarPage() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-muted-foreground">Loading calendar...</span>
         </div>
       </div>

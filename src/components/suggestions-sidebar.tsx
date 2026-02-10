@@ -64,8 +64,8 @@ export function SuggestionsSidebar() {
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10">
-              <Sparkles className="h-4 w-4 text-orange-500" />
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <h2 className="text-base font-bold">Suggestions</h2>
           </div>
@@ -89,7 +89,7 @@ export function SuggestionsSidebar() {
             placeholder="Search suggestions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 text-sm bg-white/50 dark:bg-white/[0.02] border-black/[0.04] dark:border-white/[0.04] focus:border-orange-500/30 focus-visible:ring-orange-500/20 rounded-xl"
+            className="pl-10 h-10 text-sm bg-white/50 dark:bg-white/[0.02] border-black/[0.04] dark:border-white/[0.04] focus:border-primary/30 focus-visible:ring-primary/20 rounded-xl"
           />
         </motion.div>
 
@@ -134,7 +134,7 @@ export function SuggestionsSidebar() {
                     {task.list?.name || "Default"}
                   </p>
                   <motion.div whileHover={{ scale: 1.01, x: 4 }}>
-                    <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/40 dark:bg-white/[0.02] hover:border-orange-500/20 hover:bg-white/60 dark:hover:bg-white/[0.03] transition-all duration-200 cursor-pointer">
+                    <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/40 dark:bg-white/[0.02] hover:border-primary/20 hover:bg-white/60 dark:hover:bg-white/[0.03] transition-all duration-200 cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 p-1.5 rounded-lg bg-red-500/10">

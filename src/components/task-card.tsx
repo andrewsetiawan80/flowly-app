@@ -62,7 +62,7 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
         className={cn(
           "group cursor-pointer transition-all duration-300",
           "border-black/[0.04] dark:border-white/[0.04] bg-white/60 dark:bg-white/[0.02]",
-          "hover:border-orange-500/20 hover:shadow-xl hover:shadow-orange-500/5",
+          "hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5",
           "hover:bg-white/80 dark:hover:bg-white/[0.04]",
           "relative overflow-hidden backdrop-blur-sm",
           isCompleted && "opacity-60 hover:opacity-80"
@@ -71,11 +71,11 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
       >
         {/* Subtle gradient overlay on hover */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-orange-500/[0.03] via-amber-500/[0.03] to-orange-500/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          className="absolute inset-0 bg-gradient-to-r from-primary/[0.03] via-primary/[0.03] to-primary/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         />
 
         {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 relative z-10">
           <motion.div 
@@ -89,7 +89,7 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
                 onToggle?.(task.id, checked === true);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="h-5 w-5 rounded-md border-2 border-muted-foreground/30 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-orange-500 data-[state=checked]:to-amber-500 data-[state=checked]:border-orange-500 transition-all duration-200"
+              className="h-5 w-5 rounded-md border-2 border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all duration-200"
             />
           </motion.div>
           
@@ -100,7 +100,7 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
                   "font-semibold text-[15px] leading-snug pr-2 transition-colors duration-200",
                   isCompleted 
                     ? "line-through text-muted-foreground/60" 
-                    : "text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400"
+                    : "text-foreground group-hover:text-primary"
                 )}
               >
                 {task.title}
@@ -111,7 +111,7 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
                 animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronRight className="h-5 w-5 text-orange-500/70 flex-shrink-0" />
+                <ChevronRight className="h-5 w-5 text-primary/70 flex-shrink-0" />
               </motion.div>
             </div>
 

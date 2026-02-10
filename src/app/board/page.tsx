@@ -195,7 +195,7 @@ export default function KanbanBoardPage() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-muted-foreground">Loading board...</span>
         </div>
       </div>
@@ -233,7 +233,7 @@ export default function KanbanBoardPage() {
       </motion.div>
 
       {/* Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto">
         {STATUS_COLUMNS.map((column, colIndex) => {
           const columnTasks = tasks.filter((t) => t.status === column.status);
           const Icon = column.icon;
@@ -246,7 +246,7 @@ export default function KanbanBoardPage() {
               transition={{ delay: colIndex * 0.1 }}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, column.status)}
-              className="min-h-[400px]"
+              className="min-h-[400px] min-w-[220px]"
             >
               <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="pb-3">
@@ -280,14 +280,14 @@ export default function KanbanBoardPage() {
                         <div className="flex items-start gap-2">
                           <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{task.title}</p>
+                            <p className="font-medium text-sm break-words">{task.title}</p>
                             {task.list && (
                               <div className="flex items-center gap-1 mt-1">
                                 <div
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: task.list.color || "#6366f1" }}
                                 />
-                                <span className="text-xs text-muted-foreground truncate">
+                                <span className="text-xs text-muted-foreground break-words">
                                   {task.list.name}
                                 </span>
                               </div>

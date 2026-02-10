@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Priority, Status } from "@prisma/client";
 import { logActivity } from "@/lib/activity";
 import { triggerWebhooks } from "@/lib/webhooks";
+import { triggerAutomations } from "@/lib/automations";
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,13 @@ export async function GET(
   const { id } = await params;
 
   const task = await prisma.task.findFirst({
-    where: { id, ownerId: me.id },
+    where: {
+      id,
+      OR: [
+        { ownerId: me.id },
+        { workspace: { members: { some: { userId: me.id } } } },
+      ],
+    },
     include: {
       list: {
         select: {
@@ -27,6 +34,9 @@ export async function GET(
           name: true,
           color: true,
         },
+      },
+      assignee: {
+        select: { id: true, name: true, email: true, image: true },
       },
       subtasks: {
         orderBy: { order: "asc" },
@@ -51,9 +61,15 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    // Verify task belongs to user
+    // Verify task belongs to user or workspace
     const existingTask = await prisma.task.findFirst({
-      where: { id, ownerId: me.id },
+      where: {
+        id,
+        OR: [
+          { ownerId: me.id },
+          { workspace: { members: { some: { userId: me.id } } } },
+        ],
+      },
     });
 
     if (!existingTask) {
@@ -61,7 +77,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { status, title, notes, priority, dueAt, listId, recurrenceRule, recurrenceInterval, nextDueAt } = body;
+    const { status, title, notes, priority, dueAt, listId, assigneeId, recurrenceRule, recurrenceInterval, nextDueAt } = body;
 
     const updateData: any = {};
     if (status !== undefined) updateData.status = status as Status;
@@ -70,6 +86,7 @@ export async function PATCH(
     if (priority !== undefined) updateData.priority = priority as Priority;
     if (dueAt !== undefined) updateData.dueAt = dueAt ? new Date(dueAt) : null;
     if (listId !== undefined) updateData.listId = listId;
+    if (assigneeId !== undefined) updateData.assigneeId = assigneeId || null;
     // Recurrence fields
     if (recurrenceRule !== undefined) updateData.recurrenceRule = recurrenceRule || null;
     if (recurrenceInterval !== undefined) updateData.recurrenceInterval = recurrenceInterval || 1;
@@ -113,10 +130,12 @@ export async function PATCH(
       changes: Object.keys(changes).length > 0 ? changes : undefined,
     });
 
-    // Trigger webhooks
+    // Trigger webhooks & automations
     await triggerWebhooks("task.updated", { task, changes });
+    triggerAutomations("task.updated", task, task.ownerId).catch(() => {});
     if (status === "DONE" && existingTask.status !== "DONE") {
       await triggerWebhooks("task.completed", { task });
+      triggerAutomations("task.completed", task, task.ownerId).catch(() => {});
     }
 
     return NextResponse.json({ task });
@@ -139,9 +158,15 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    // Verify task belongs to user
+    // Verify task belongs to user or workspace
     const existingTask = await prisma.task.findFirst({
-      where: { id, ownerId: me.id },
+      where: {
+        id,
+        OR: [
+          { ownerId: me.id },
+          { workspace: { members: { some: { userId: me.id } } } },
+        ],
+      },
     });
 
     if (!existingTask) {
@@ -166,6 +191,7 @@ export async function DELETE(
       entityTitle: existingTask.title,
     });
     await triggerWebhooks("task.deleted", { task: existingTask });
+    triggerAutomations("task.deleted", existingTask, existingTask.ownerId).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

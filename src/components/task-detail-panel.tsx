@@ -17,6 +17,13 @@ import {
   Plus,
   ListTodo,
   GripVertical,
+  MessageSquare,
+  Paperclip,
+  Upload,
+  Download,
+  Send,
+  File as FileIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +36,21 @@ interface Subtask {
   title: string;
   completed: boolean;
   order: number;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Attachment {
+  id: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  createdAt: string;
 }
 
 interface TaskDetailPanelProps {
@@ -79,6 +101,20 @@ export function TaskDetailPanel({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [addingSubtask, setAddingSubtask] = useState(false);
 
+  // Comments state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+
+  // Attachments state
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Active section tab
+  const [activeTab, setActiveTab] = useState<"subtasks" | "comments" | "files">("subtasks");
+
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -90,6 +126,11 @@ export function TaskDetailPanel({
       setSubtasks(task.subtasks || []);
       setHasChanges(false);
       setNewSubtaskTitle("");
+      setNewComment("");
+      setEditingCommentId(null);
+      // Fetch comments and attachments
+      fetchComments(task.id);
+      fetchAttachments(task.id);
     }
   }, [task]);
 
@@ -155,6 +196,153 @@ export function TaskDetailPanel({
   const subtaskProgress = subtasks.length > 0 
     ? Math.round((subtasks.filter(s => s.completed).length / subtasks.length) * 100)
     : 0;
+
+  // Comments handlers
+  const fetchComments = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/comments`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data.comments || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!task || !newComment.trim()) return;
+    setSendingComment(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newComment.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setComments([...comments, data.comment]);
+        setNewComment("");
+      }
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: editCommentText.trim() }),
+      });
+      if (res.ok) {
+        setComments(comments.map(c => c.id === commentId ? { ...c, content: editCommentText.trim() } : c));
+        setEditingCommentId(null);
+        setEditCommentText("");
+      }
+    } catch (error) {
+      console.error("Failed to update comment:", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setComments(comments.filter(c => c.id !== commentId));
+      }
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+    }
+  };
+
+  // Attachments handlers
+  const fetchAttachments = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/attachments?entityType=task&entityId=${taskId}`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setAttachments(data.attachments || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch attachments:", error);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!task || !e.target.files?.length) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(e.target.files)) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("entityType", "task");
+        formData.append("entityId", task.id);
+        formData.append("taskId", task.id);
+
+        const res = await fetch("/api/attachments", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAttachments(prev => [...prev, data.attachment]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const res = await fetch(`/api/attachments/${attachmentId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setAttachments(attachments.filter(a => a.id !== attachmentId));
+      }
+    } catch (error) {
+      console.error("Failed to delete attachment:", error);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (mimetype: string) => {
+    if (mimetype.startsWith("image/")) return <ImageIcon className="h-4 w-4 text-blue-500" />;
+    return <FileIcon className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return format(new Date(dateStr), "MMM d");
+  };
 
   const handleSave = async () => {
     if (!task || !hasChanges) return;
@@ -227,7 +415,7 @@ export function TaskDetailPanel({
                       "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                       status === "DONE"
                         ? "bg-gradient-to-br from-emerald-500 to-green-500 text-white"
-                        : "border-2 border-gray-300 dark:border-gray-600 hover:border-orange-500"
+                        : "border-2 border-gray-300 dark:border-gray-600 hover:border-primary"
                     )}
                   >
                     {status === "DONE" && <CheckCircle2 className="h-4 w-4" />}
@@ -242,7 +430,7 @@ export function TaskDetailPanel({
                       size="sm"
                       onClick={handleSave}
                       disabled={saving}
-                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                      className="bg-primary hover:bg-primary/90"
                     >
                       <Save className="h-3.5 w-3.5 mr-1.5" />
                       {saving ? "Saving..." : "Save"}
@@ -287,97 +475,303 @@ export function TaskDetailPanel({
                   }}
                   placeholder="Add notes..."
                   rows={4}
-                  className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
+                  className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
                 />
               </div>
 
-              {/* Subtasks */}
+              {/* Tabs: Subtasks / Comments / Files */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <ListTodo className="h-4 w-4" />
-                    Subtasks
-                    {subtasks.length > 0 && (
-                      <span className="text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                        {subtasks.filter(s => s.completed).length}/{subtasks.length}
-                      </span>
-                    )}
-                  </label>
-                  {subtasks.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{subtaskProgress}%</span>
-                  )}
+                <div className="flex border-b border-black/5 dark:border-white/5">
+                  {([
+                    { key: "subtasks" as const, label: "Subtasks", icon: ListTodo, count: subtasks.length },
+                    { key: "comments" as const, label: "Comments", icon: MessageSquare, count: comments.length },
+                    { key: "files" as const, label: "Files", icon: Paperclip, count: attachments.length },
+                  ]).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors border-b-2 -mb-px",
+                        activeTab === tab.key
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <tab.icon className="h-3.5 w-3.5" />
+                      {tab.label}
+                      {tab.count > 0 && (
+                        <span className={cn(
+                          "text-[10px] px-1.5 py-0.5 rounded-full",
+                          activeTab === tab.key
+                            ? "bg-primary/10 text-primary"
+                            : "bg-black/5 dark:bg-white/5"
+                        )}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Progress bar */}
-                {subtasks.length > 0 && (
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.04] dark:bg-white/[0.04]">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${subtaskProgress}%` }}
-                      transition={{ duration: 0.3 }}
-                      className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"
-                    />
+                {/* Subtasks Tab */}
+                {activeTab === "subtasks" && (
+                  <div className="space-y-3">
+                    {/* Progress bar */}
+                    {subtasks.length > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-black/[0.04] dark:bg-white/[0.04]">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${subtaskProgress}%` }}
+                            transition={{ duration: 0.3 }}
+                            className="h-full bg-primary rounded-full"
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {subtasks.filter(s => s.completed).length}/{subtasks.length}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Subtask list */}
+                    <div className="space-y-1">
+                      <AnimatePresence mode="popLayout">
+                        {subtasks.map((subtask) => (
+                          <motion.div
+                            key={subtask.id}
+                            layout
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="group flex items-center gap-3 p-2 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                          >
+                            <Checkbox
+                              checked={subtask.completed}
+                              onCheckedChange={(checked) => handleToggleSubtask(subtask.id, checked === true)}
+                              className="h-4 w-4 rounded border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            <span className={cn(
+                              "flex-1 text-sm",
+                              subtask.completed && "line-through text-muted-foreground"
+                            )}>
+                              {subtask.title}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteSubtask(subtask.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 hover:text-red-500 transition-all"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+
+                    {subtasks.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-4">No subtasks yet</p>
+                    )}
+
+                    {/* Add subtask input */}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newSubtaskTitle}
+                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newSubtaskTitle.trim()) {
+                            handleAddSubtask();
+                          }
+                        }}
+                        placeholder="Add a subtask..."
+                        className="flex-1 h-9 text-sm bg-black/[0.02] dark:bg-white/[0.02]"
+                        disabled={addingSubtask}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleAddSubtask}
+                        disabled={!newSubtaskTitle.trim() || addingSubtask}
+                        className="h-9 px-3"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
 
-                {/* Subtask list */}
-                <div className="space-y-1">
-                  <AnimatePresence mode="popLayout">
-                    {subtasks.map((subtask) => (
-                      <motion.div
-                        key={subtask.id}
-                        layout
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="group flex items-center gap-3 p-2 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                      >
-                        <Checkbox
-                          checked={subtask.completed}
-                          onCheckedChange={(checked) => handleToggleSubtask(subtask.id, checked === true)}
-                          className="h-4 w-4 rounded border-2 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-orange-500 data-[state=checked]:to-amber-500 data-[state=checked]:border-orange-500"
-                        />
-                        <span className={cn(
-                          "flex-1 text-sm",
-                          subtask.completed && "line-through text-muted-foreground"
-                        )}>
-                          {subtask.title}
-                        </span>
-                        <button
-                          onClick={() => handleDeleteSubtask(subtask.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 hover:text-red-500 transition-all"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                {/* Comments Tab */}
+                {activeTab === "comments" && (
+                  <div className="space-y-3">
+                    {/* Comments list */}
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {comments.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">No comments yet. Start a discussion!</p>
+                      )}
+                      <AnimatePresence mode="popLayout">
+                        {comments.map((comment) => (
+                          <motion.div
+                            key={comment.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="group relative rounded-lg bg-black/[0.02] dark:bg-white/[0.02] p-3"
+                          >
+                            {editingCommentId === comment.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editCommentText}
+                                  onChange={(e) => setEditCommentText(e.target.value)}
+                                  className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  rows={2}
+                                  autoFocus
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => { setEditingCommentId(null); setEditCommentText(""); }}
+                                    className="h-7 text-xs"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateComment(comment.id)}
+                                    disabled={!editCommentText.trim()}
+                                    className="h-7 text-xs bg-primary hover:bg-primary/90"
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {timeAgo(comment.createdAt)}
+                                    {comment.updatedAt !== comment.createdAt && " (edited)"}
+                                  </span>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditCommentText(comment.content);
+                                      }}
+                                      className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                      className="text-[10px] text-muted-foreground hover:text-red-500 px-1.5 py-0.5 rounded"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
 
-                {/* Add subtask input */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newSubtaskTitle}
-                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newSubtaskTitle.trim()) {
-                        handleAddSubtask();
-                      }
-                    }}
-                    placeholder="Add a subtask..."
-                    className="flex-1 h-9 text-sm bg-black/[0.02] dark:bg-white/[0.02]"
-                    disabled={addingSubtask}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleAddSubtask}
-                    disabled={!newSubtaskTitle.trim() || addingSubtask}
-                    className="h-9 px-3"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                    {/* Add comment input */}
+                    <div className="flex items-end gap-2">
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey && newComment.trim()) {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                        placeholder="Write a comment... (Enter to send)"
+                        rows={2}
+                        className="flex-1 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                        disabled={sendingComment}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() || sendingComment}
+                        className="h-9 px-3 bg-primary hover:bg-primary/90"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Files Tab */}
+                {activeTab === "files" && (
+                  <div className="space-y-3">
+                    {/* File list */}
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {attachments.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">No files attached yet</p>
+                      )}
+                      <AnimatePresence mode="popLayout">
+                        {attachments.map((attachment) => (
+                          <motion.div
+                            key={attachment.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="group flex items-center gap-3 p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+                          >
+                            {getFileIcon(attachment.mimetype)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{attachment.originalName}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {formatFileSize(attachment.size)} · {timeAgo(attachment.createdAt)}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <a
+                                href={`/api/attachments/${attachment.id}/download`}
+                                className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                                title="Download"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </a>
+                              <button
+                                onClick={() => handleDeleteAttachment(attachment.id)}
+                                className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Upload button */}
+                    <label className={cn(
+                      "flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed cursor-pointer transition-colors",
+                      uploading
+                        ? "border-primary/30 bg-primary/5 text-primary"
+                        : "border-black/10 dark:border-white/10 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary"
+                    )}>
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                      />
+                      <Upload className="h-4 w-4" />
+                      <span className="text-xs font-medium">
+                        {uploading ? "Uploading..." : "Upload files (max 10MB)"}
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Due Date */}
@@ -391,7 +785,7 @@ export function TaskDetailPanel({
                     <button
                       key={option.label}
                       onClick={() => setQuickDate(option.days)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-black/5 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       {option.label}
                     </button>
@@ -434,7 +828,7 @@ export function TaskDetailPanel({
                       className={cn(
                         "flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all",
                         priority === option.value
-                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-2 ring-orange-500/30"
+                          ? "bg-primary/10 text-primary ring-2 ring-primary/30"
                           : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10"
                       )}
                     >
@@ -457,7 +851,7 @@ export function TaskDetailPanel({
                     setListId(e.target.value);
                     setHasChanges(true);
                   }}
-                  className="w-full h-11 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50"
+                  className="w-full h-11 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
                 >
                   {lists.map((list) => (
                     <option key={list.id} value={list.id}>
@@ -499,4 +893,3 @@ export function TaskDetailPanel({
     </AnimatePresence>
   );
 }
-

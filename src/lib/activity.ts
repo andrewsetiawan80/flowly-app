@@ -28,7 +28,7 @@ export async function logActivity({
         entityType,
         entityId,
         entityTitle,
-        changes: changes || null,
+        changes: changes ?? undefined,
       },
     });
   } catch (error) {

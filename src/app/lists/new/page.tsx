@@ -179,14 +179,14 @@ export default function NewProjectPage() {
             {isChecklist ? (
               <ShoppingCart className="h-8 w-8 text-emerald-500" />
             ) : (
-              <FolderPlus className="h-8 w-8 text-orange-500" />
+              <FolderPlus className="h-8 w-8 text-primary" />
             )}
           </motion.div>
           <h1 className={cn(
             "text-3xl font-bold bg-clip-text text-transparent",
             isChecklist 
               ? "bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 dark:from-emerald-400 dark:via-green-400 dark:to-emerald-400"
-              : "bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 dark:from-orange-400 dark:via-amber-400 dark:to-orange-400"
+              : "text-primary"
           )}>
             {isSubProject 
               ? "Create Sub-project" 
@@ -225,7 +225,7 @@ export default function NewProjectPage() {
                 "h-8 w-1 rounded-full",
                 isChecklist 
                   ? "bg-gradient-to-b from-emerald-500 to-green-500"
-                  : "bg-gradient-to-b from-orange-500 to-amber-500"
+                  : "bg-primary"
               )} />
               {isChecklist ? "Checklist" : "Project"} Details
             </CardTitle>
@@ -245,18 +245,18 @@ export default function NewProjectPage() {
                       className={cn(
                         "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
                         selectedType === "PROJECT"
-                          ? "border-orange-500 bg-orange-500/10"
+                          ? "border-primary bg-primary/10"
                           : "border-border/50 hover:border-border"
                       )}
                     >
                       <FolderOpen className={cn(
                         "h-6 w-6",
-                        selectedType === "PROJECT" ? "text-orange-500" : "text-muted-foreground"
+                        selectedType === "PROJECT" ? "text-primary" : "text-muted-foreground"
                       )} />
                       <div className="text-left">
                         <p className={cn(
                           "font-semibold",
-                          selectedType === "PROJECT" ? "text-orange-600 dark:text-orange-400" : ""
+                          selectedType === "PROJECT" ? "text-primary" : ""
                         )}>Project</p>
                         <p className="text-xs text-muted-foreground">Tasks with dates & priorities</p>
                       </div>
@@ -302,7 +302,7 @@ export default function NewProjectPage() {
                   placeholder={isChecklist ? "e.g., Grocery List, Packing List" : "e.g., Website Redesign, Q4 Goals"}
                   className={cn(
                     "h-12 border-border/50",
-                    isChecklist ? "focus:border-emerald-500" : "focus:border-orange-500"
+                    isChecklist ? "focus:border-emerald-500" : "focus:border-primary"
                   )}
                   maxLength={50}
                   autoFocus
@@ -323,7 +323,7 @@ export default function NewProjectPage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="What is this project about?"
-                    className="w-full h-24 rounded-xl border border-border/50 bg-background px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                    className="w-full h-24 rounded-xl border border-border/50 bg-background px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     maxLength={500}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -396,7 +396,7 @@ export default function NewProjectPage() {
                     "flex-1",
                     isChecklist 
                       ? "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
-                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                      : "bg-primary hover:bg-primary/90"
                   )}
                   size="lg"
                 >

@@ -130,7 +130,7 @@ export function TaskForm({
                   transition={{ delay: 0.1, duration: 0.3 }}
                   className="flex items-center gap-4"
                 >
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
                     <Flame className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -152,7 +152,7 @@ export function TaskForm({
                   transition={{ delay: 0.15, duration: 0.3 }}
                 >
                   <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-orange-500" />
+                    <FileText className="h-4 w-4 text-primary" />
                     Title *
                   </Label>
                   <Input
@@ -173,7 +173,7 @@ export function TaskForm({
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
                   <Label htmlFor="notes" className="text-sm font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-orange-500" />
+                    <FileText className="h-4 w-4 text-primary" />
                     Notes
                   </Label>
                   <textarea
@@ -182,7 +182,7 @@ export function TaskForm({
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add any additional details..."
                     rows={3}
-                    className="flex min-h-[90px] w-full rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-white/50 dark:bg-white/[0.02] px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500/30 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 resize-none"
+                    className="flex min-h-[90px] w-full rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-white/50 dark:bg-white/[0.02] px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/30 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 resize-none"
                   />
                 </motion.div>
 
@@ -194,7 +194,7 @@ export function TaskForm({
                     transition={{ delay: 0.25, duration: 0.3 }}
                   >
                     <Label htmlFor="priority" className="text-sm font-semibold flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-orange-500" />
+                      <Flag className="h-4 w-4 text-primary" />
                       Priority
                     </Label>
                     <Select
@@ -217,7 +217,7 @@ export function TaskForm({
                     transition={{ delay: 0.3, duration: 0.3 }}
                   >
                     <Label htmlFor="list" className="text-sm font-semibold flex items-center gap-2">
-                      <List className="h-4 w-4 text-orange-500" />
+                      <List className="h-4 w-4 text-primary" />
                       List
                     </Label>
                     <Select
@@ -243,7 +243,7 @@ export function TaskForm({
                   transition={{ delay: 0.35, duration: 0.3 }}
                 >
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-orange-500" />
+                    <CalendarIcon className="h-4 w-4 text-primary" />
                     Due Date
                   </Label>
                   
@@ -259,7 +259,7 @@ export function TaskForm({
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl transition-all",
                             selectedQuickDate === option.days
-                              ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-2 ring-orange-500/30"
+                              ? "bg-primary/10 text-primary ring-2 ring-primary/30"
                               : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10"
                           )}
                         >
@@ -313,7 +313,7 @@ export function TaskForm({
                     <Button 
                       type="submit" 
                       disabled={loading || !title.trim()}
-                      className="font-semibold shadow-lg shadow-orange-500/25"
+                      className="font-semibold shadow-lg shadow-primary/25"
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">

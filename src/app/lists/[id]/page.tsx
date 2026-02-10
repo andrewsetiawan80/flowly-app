@@ -70,20 +70,27 @@ export default function ProjectDetailPage() {
     }
     
     try {
-      const res = await fetch("/api/lists", {
-        credentials: "include",
-      });
+      // Fetch project with tasks AND all lists (lightweight) in parallel
+      const [projectRes, listsRes] = await Promise.all([
+        fetch(`/api/lists?listId=${projectId}&includeTasks=true`, {
+          credentials: "include",
+        }),
+        fetch("/api/lists", {
+          credentials: "include",
+        }),
+      ]);
       
-      if (res.ok) {
-        const data = await res.json();
-        const allProjects = data.lists || [];
-        const foundProject = allProjects.find((l: Project) => l.id === projectId);
+      if (projectRes.ok && listsRes.ok) {
+        const projectData = await projectRes.json();
+        const listsData = await listsRes.json();
+        const allProjects = listsData.lists || [];
+        const foundProject = projectData.list;
         
         if (foundProject) {
           setProject(foundProject);
           setTasks(foundProject.tasks || []);
           
-          // Find sub-projects (children)
+          // Find sub-projects from the lightweight list
           const children = allProjects.filter((p: Project) => p.parentId === projectId);
           setSubProjects(children);
           
@@ -99,8 +106,10 @@ export default function ProjectDetailPage() {
         }
         
         setAllLists(allProjects);
-      } else if (res.status === 401) {
+      } else if (projectRes.status === 401 || listsRes.status === 401) {
         router.push("/signin");
+      } else if (projectRes.status === 404) {
+        router.push("/dashboard");
       }
     } catch (error) {
       console.error("Failed to fetch project:", error);
@@ -332,7 +341,7 @@ export default function ProjectDetailPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="flex items-center gap-3"
         >
-          <div className="h-5 w-5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-muted-foreground font-medium">Loading...</span>
         </motion.div>
       </div>
@@ -598,7 +607,7 @@ export default function ProjectDetailPage() {
             </motion.div>
             <div className="flex-1 min-w-0">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 dark:from-orange-400 dark:via-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                <span className="text-primary">
                   {project.name}
                 </span>
               </h1>
@@ -615,7 +624,7 @@ export default function ProjectDetailPage() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button 
                 onClick={() => setIsFormOpen(true)}
-                className="shadow-lg shadow-orange-500/25"
+                className="shadow-lg shadow-primary/25"
               >
                 <Plus className="sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">New Task</span>
@@ -667,7 +676,7 @@ export default function ProjectDetailPage() {
                 transition={{ delay: 0.1 + index * 0.05 }}
               >
                 <Link href={`/lists/${subProject.id}`}>
-                  <Card className="group cursor-pointer hover:border-orange-500/20 hover:shadow-lg transition-all">
+                  <Card className="group cursor-pointer hover:border-primary/20 hover:shadow-lg transition-all">
                     <CardContent className="p-4 flex items-center gap-4">
                       <div 
                         className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -680,7 +689,7 @@ export default function ProjectDetailPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                        <p className="font-semibold truncate group-hover:text-primary transition-colors">
                           {subProject.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -708,7 +717,7 @@ export default function ProjectDetailPage() {
         {activeTasks.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 px-1">
-              <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-amber-500 rounded-full" />
+              <div className="h-8 w-1 bg-primary rounded-full" />
               <h2 className="text-lg font-bold">Active Tasks</h2>
               <span className="text-sm text-muted-foreground/70 font-medium">({activeTasks.length})</span>
             </div>
@@ -786,8 +795,8 @@ export default function ProjectDetailPage() {
           >
             <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/40 dark:bg-white/[0.02]">
               <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="rounded-3xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 p-6 mb-6">
-                  <FolderOpen className="h-12 w-12 text-orange-500" />
+                <div className="rounded-3xl bg-primary/10 p-6 mb-6">
+                  <FolderOpen className="h-12 w-12 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Empty project</h3>
                 <p className="text-sm text-muted-foreground mb-8 max-w-md">
@@ -797,7 +806,7 @@ export default function ProjectDetailPage() {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
                       onClick={() => setIsFormOpen(true)}
-                      className="shadow-lg shadow-orange-500/25"
+                      className="shadow-lg shadow-primary/25"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Add Task
