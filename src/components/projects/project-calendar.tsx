@@ -1,0 +1,12 @@
+"use client";
+import {useState} from "react";
+import {Task} from "@prisma/client";
+import {addMonths,eachDayOfInterval,endOfMonth,endOfWeek,format,isSameDay,isSameMonth,isToday,startOfMonth,startOfWeek} from "date-fns";
+import {ChevronLeft,ChevronRight} from "lucide-react";
+import {cn} from "@/lib/utils";
+export default function ProjectCalendar({tasks,onSelect}:{tasks:Task[];onSelect:(task:Task)=>void}){
+ const [month,setMonth]=useState(()=>new Date());
+ const days=eachDayOfInterval({start:startOfWeek(startOfMonth(month),{weekStartsOn:1}),end:endOfWeek(endOfMonth(month),{weekStartsOn:1})});
+ const undated=tasks.filter(t=>!t.dueAt&&t.status!=="DONE"&&t.status!=="CANCELED");
+ return <div className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{format(month,"MMMM yyyy")}</h2><div className="flex items-center gap-2"><button aria-label="Previous month" className="rounded-lg border p-2" onClick={()=>setMonth(addMonths(month,-1))}><ChevronLeft size={16}/></button><button className="rounded-lg border px-3 py-2 text-sm" onClick={()=>setMonth(new Date())}>Today</button><button aria-label="Next month" className="rounded-lg border p-2" onClick={()=>setMonth(addMonths(month,1))}><ChevronRight size={16}/></button></div></div><div className="overflow-x-auto rounded-xl border"><div className="min-w-[600px]"><div className="grid grid-cols-7 bg-muted/40">{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=><div key={d} className="p-3 text-xs font-medium text-muted-foreground">{d}</div>)}</div><div className="grid grid-cols-7">{days.map(day=><div key={day.toISOString()} className={cn("min-h-[110px] border-t border-r p-2",!isSameMonth(day,month)&&"bg-muted/20 text-muted-foreground")}><span className={cn("mb-2 grid h-6 w-6 place-items-center rounded-full text-xs",isToday(day)&&"bg-primary text-primary-foreground")}>{format(day,"d")}</span>{tasks.filter(t=>t.dueAt&&isSameDay(new Date(t.dueAt),day)).map(t=><button key={t.id} onClick={()=>onSelect(t)} className={cn("mb-1 w-full rounded bg-primary/10 px-2 py-1 text-left text-xs text-primary line-clamp-2",t.status==="DONE"&&"line-through opacity-60")}>{t.title}</button>)}</div>)}</div></div></div>{undated.length>0&&<section><h3 className="mb-2 text-sm font-medium">No due date</h3><div className="flex flex-wrap gap-2">{undated.map(t=><button key={t.id} onClick={()=>onSelect(t)} className="rounded-lg border px-3 py-2 text-sm hover:bg-muted">{t.title}</button>)}</div></section>}</div>;
+}

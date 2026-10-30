@@ -2,14 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, Home, ListTodo, CalendarDays, Calendar, BarChart3 } from "lucide-react";
+import { Inbox, Folder, BookOpen, Home, ListTodo, CalendarDays, Calendar, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", icon: Home, label: "Overview" },
-  { href: "/tasks", icon: ListTodo, label: "Tasks" },
-  { href: "/myday", icon: CalendarDays, label: "My day" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
+  { href: "/myday", icon: CalendarDays, label: "Today" },
+  { href: "/inbox", icon: Inbox, label: "Inbox" },
+  { href: "/projects", icon: Folder, label: "Projects" },
   { href: "/notes", icon: BookOpen, label: "Notes" },
 ];
 
@@ -17,10 +16,10 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Quick navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-black/5 dark:border-white/5 pb-safe">
+    <nav aria-label="Quick navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-xl border-t border-black/5 dark:border-white/5 pb-safe">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/lists/")) || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

@@ -9,24 +9,24 @@
     --foreground: 222 30% 16%;
     --card: 0 0% 100%;
     --card-foreground: 222 30% 16%;
-    --popover: 30 20% 99%;
+    --popover: 245 25% 99%;
     --popover-foreground: 20 14% 10%;
-    --primary: 24 95% 53%;
+    --primary: 250 61% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 15% 94%;
+    --secondary: 245 20% 95%;
     --secondary-foreground: 20 14% 20%;
-    --muted: 30 15% 94%;
+    --muted: 245 20% 95%;
     --muted-foreground: 215 14% 42%;
-    --accent: 24 95% 53%;
+    --accent: 250 61% 53%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 214 18% 88%;
-    --input: 30 15% 88%;
-    --ring: 24 95% 53%;
+    --input: 245 16% 87%;
+    --ring: 250 61% 53%;
     --radius: 0.75rem;
-    --accent-rgb: 249, 115, 22;
-    --accent-hex: #f97316;
+    --accent-rgb: 135, 119, 238;
+    --accent-hex: #8777ee;
   }
 
   .dark {
@@ -36,21 +36,21 @@
     --card-foreground: 30 20% 98%;
     --popover: 222 19% 14%;
     --popover-foreground: 30 20% 98%;
-    --primary: 24 100% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 251 78% 70%;
+    --primary-foreground: 250 30% 12%;
     --secondary: 240 8% 12%;
     --secondary-foreground: 30 20% 90%;
     --muted: 240 8% 14%;
     --muted-foreground: 215 16% 70%;
-    --accent: 24 100% 60%;
+    --accent: 251 78% 70%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
     --border: 218 16% 24%;
     --input: 218 16% 24%;
-    --ring: 24 100% 60%;
-    --accent-rgb: 249, 115, 22;
-    --accent-hex: #f97316;
+    --ring: 251 78% 70%;
+    --accent-rgb: 135, 119, 238;
+    --accent-hex: #8777ee;
   }
 }
 
@@ -77,15 +77,15 @@
   }
   
   h1 {
-    @apply text-4xl lg:text-5xl;
-  }
-  
-  h2 {
     @apply text-3xl lg:text-4xl;
   }
   
+  h2 {
+    @apply text-2xl;
+  }
+  
   h3 {
-    @apply text-2xl lg:text-3xl;
+    @apply text-xl;
   }
   
   p {

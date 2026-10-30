@@ -25,8 +25,10 @@ export async function GET(
     return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
   }
 
-  // Verify ownership via task
-  if (attachment.task && attachment.task.ownerId !== me.id) {
+  const allowed = attachment.entityType === "task"
+    ? attachment.task?.ownerId === me.id
+    : attachment.entityType === "list" && !!await prisma.list.findFirst({where:{id:attachment.entityId,ownerId:me.id}});
+  if (!allowed) {
     return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
   }
 
@@ -35,8 +37,10 @@ export async function GET(
 
     return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": attachment.mimetype,
-        "Content-Disposition": `attachment; filename="${attachment.originalName}"`,
+        "Content-Type": "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(attachment.originalName)}`,
         "Content-Length": attachment.size.toString(),
       },
     });

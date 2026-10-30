@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { BookOpen, Home, CalendarDays, CalendarClock, ListTodo, Columns3, Table2, Calendar, GanttChart, BarChart3, Zap, Plus, Search, Settings, LogOut, PanelLeftClose, PanelLeftOpen, Menu, ChevronRight, Folder, CheckSquare, Sun, Moon } from "lucide-react";
+import { Inbox, BookOpen, Home, CalendarDays, CalendarClock, ListTodo, Columns3, Table2, Calendar, GanttChart, BarChart3, Zap, Plus, Search, Settings, LogOut, PanelLeftClose, PanelLeftOpen, Menu, ChevronRight, Folder, CheckSquare, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { REFRESH_EVENTS } from "@/lib/events";
@@ -20,19 +20,16 @@ interface Project {
 }
 const sections = [
   { label: "Workspace", items: [
-    { href: "/dashboard", label: "Overview", icon: Home },
-    { href: "/myday", label: "My day", icon: CalendarDays },
-    { href: "/today", label: "Next 7 days", icon: CalendarClock },
-    { href: "/tasks", label: "All tasks", icon: ListTodo },
+    { href: "/myday", label: "Today", icon: CalendarDays },
+    { href: "/inbox", label: "Inbox", icon: Inbox },
+    { href: "/projects", label: "Projects", icon: Folder },
     { href: "/notes", label: "Notes", icon: BookOpen },
   ] },
-  { label: "Plan", items: [
-    { href: "/board", label: "Board", icon: Columns3 },
-    { href: "/table", label: "Table", icon: Table2 },
-    { href: "/calendar", label: "Calendar", icon: Calendar },
-    { href: "/timeline", label: "Timeline", icon: GanttChart },
-  ] },
-  { label: "Tools", items: [
+  { label: "More", items: [
+    { href: "/dashboard", label: "Overview", icon: Home },
+    { href: "/tasks", label: "All tasks", icon: ListTodo },
+    { href: "/today", label: "Next 7 days", icon: CalendarClock },
+    { href: "/calendar", label: "All calendars", icon: Calendar },
     { href: "/stats", label: "Insights", icon: BarChart3 },
     { href: "/automations", label: "Automations", icon: Zap },
   ] },
@@ -95,7 +92,7 @@ export function Sidebar() {
 
   const content = (compact: boolean, mobile = false) => <>
     <div className={cn("flex h-20 shrink-0 items-center gap-3 px-5", compact && "justify-center px-2")}>
-      <Link href="/dashboard" aria-label="Flowly overview" className="flex items-center gap-2.5">
+      <Link href="/myday" aria-label="Flowly today" className="flex items-center gap-2.5">
         <img src="/icon.svg?v=3" alt="" className="h-9 w-9 object-contain" />
         {!compact && <span className="text-xl font-semibold tracking-tight">flowly<span className="text-primary">.</span></span>}
       </Link>
@@ -110,17 +107,17 @@ export function Sidebar() {
     </div>
     <nav aria-label="Main navigation" className={cn("flex-1 overflow-y-auto px-4 py-3 space-y-2", compact && "px-2")}>
       {sections.map(section => {
-        const links = <div className="space-y-0.5">{section.items.map(item => <Link key={item.href} href={item.href} title={item.label} aria-label={item.label} aria-current={pathname === item.href ? "page" : undefined} className={cn("flowly-nav", compact && "justify-center")}>
+        const links = <div className="space-y-0.5">{section.items.map(item => <Link key={item.href} href={item.href} title={item.label} aria-label={item.label} aria-current={pathname === item.href || (item.href === "/projects" && pathname.startsWith("/lists/")) ? "page" : undefined} className={cn("flowly-nav", compact && "justify-center")}>
           <item.icon className="h-[18px] w-[18px] shrink-0" />{!compact && item.label}
         </Link>)}</div>;
-        if (section.label === "Workspace" || compact) return <div key={section.label}>{links}</div>;
+        if (section.label === "Workspace") return <div key={section.label}>{links}</div>;
         return <details key={`${section.label}-${pathname}`} open={section.items.some(item => item.href === pathname)} className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted">{section.label}<ChevronRight className="h-4 w-4 group-open:rotate-90" /></summary>
+          <summary title="More views" className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted">{section.label}<ChevronRight className="h-4 w-4 group-open:rotate-90" /></summary>
           {links}
         </details>;
       })}
       <div>
-        {!compact && <div className="flex items-center justify-between px-3 pb-2"><p className="text-xs font-medium text-muted-foreground">Personal projects</p><Link href="/lists/new" aria-label="New project" title="New project" className="rounded p-1 hover:bg-muted"><Plus className="h-4 w-4" /></Link></div>}
+        {!compact && <div className="flex items-center justify-between px-3 pb-2"><p className="text-xs font-medium text-muted-foreground">Your projects</p><Link href="/lists/new" aria-label="New project" title="New project" className="rounded p-1 hover:bg-muted"><Plus className="h-4 w-4" /></Link></div>}
         {projects.map(project => <ProjectLink key={project.id} project={project} compact={compact} pathname={pathname} />)}
         {!compact && projectError && <button onClick={fetchProjects} className="px-3 py-2 text-xs text-destructive">Couldn’t load projects. Retry</button>}
         {!compact && !projectsLoading && !projectError && projects.length === 0 && <Link href="/lists/new" className="flowly-nav text-xs">Create your first project <Plus className="h-4 w-4" /></Link>}
@@ -147,7 +144,7 @@ export function Sidebar() {
   return <>
     <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b bg-card px-4 lg:hidden">
       <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="p-2 -ml-2 rounded-md hover:bg-muted"><Menu className="h-5 w-5" /></button>
-      <Link href="/dashboard" className="font-semibold tracking-tight">flowly<span className="text-primary">.</span></Link>
+      <Link href="/myday" className="font-semibold tracking-tight">flowly<span className="text-primary">.</span></Link>
       <button onClick={openSearch} aria-label="Search tasks, notes and projects" className="p-2 -mr-2 rounded-md hover:bg-muted"><Search className="h-5 w-5" /></button>
     </header>
     <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>

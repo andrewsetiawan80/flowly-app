@@ -38,10 +38,10 @@ export const themePresets: ThemePreset[] = [
   {
     id: "purple",
     name: "Purple",
-    light: { primary: "262 83% 58%", accent: "262 83% 58%", ring: "262 83% 58%" },
-    dark: { primary: "263 70% 65%", accent: "263 70% 65%", ring: "263 70% 65%" },
-    rgb: "139, 92, 246",
-    hex: "#8b5cf6",
+    light: { primary: "250 61% 53%", accent: "250 61% 53%", ring: "250 61% 53%" },
+    dark: { primary: "251 78% 70%", accent: "251 78% 70%", ring: "251 78% 70%" },
+    rgb: "135, 119, 238",
+    hex: "#8777ee",
   },
   {
     id: "teal",
@@ -85,7 +85,7 @@ export const themePresets: ThemePreset[] = [
   },
 ];
 
-export const DEFAULT_THEME_ID = "orange";
+export const DEFAULT_THEME_ID = "purple";
 
 export function getThemeById(id: string): ThemePreset {
   return themePresets.find((t) => t.id === id) || themePresets[0];

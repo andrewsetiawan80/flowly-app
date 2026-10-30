@@ -34,11 +34,11 @@ export default function NewProjectPage() {
   const typeParam = searchParams.get("type") as ListType | null;
   
   const { data: session, status } = useSession();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(searchParams.get("name") || "");
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<ListType>(typeParam === "CHECKLIST" ? "CHECKLIST" : "PROJECT");
   const [selectedColor, setSelectedColor] = useState(
-    typeParam === "CHECKLIST" ? "#10b981" : colorOptions[8].value // Green for checklist, Orange for project
+    typeParam === "CHECKLIST" ? "#10b981" : colorOptions[0].value // Purple default for projects
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");

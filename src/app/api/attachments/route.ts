@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (!["task", "list"].includes(entityType)) return NextResponse.json({error:"Invalid entity type"},{status:400});
+
   // Verify ownership based on entity type
   if (entityType === "task") {
     const task = await prisma.task.findFirst({
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (!["task", "list"].includes(entityType)) return NextResponse.json({error:"Invalid entity type"},{status:400});
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {

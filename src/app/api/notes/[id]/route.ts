@@ -21,8 +21,9 @@ export async function PATCH(req:NextRequest,ctx:Context) {
     const note=await prisma.$transaction(async tx=>{
       const result=await tx.note.updateMany({where:{id,ownerId:me.id,version:body.version},data:{...parsed.data,version:{increment:1},...(parsed.data.isArchived!==undefined?{archivedAt:parsed.data.isArchived?new Date():null}:{})}});
       if(!result.count) throw new Error("conflict");
-      if((parsed.data.content!==undefined && parsed.data.content!==old.content)||(parsed.data.title!==undefined && parsed.data.title!==old.title)) await tx.noteRevision.create({data:{noteId:id,title:old.title,content:old.content}});
-      return tx.note.findUnique({where:{id}});
+      const previous=await tx.noteRevision.findFirst({where:{noteId:id},orderBy:{createdAt:"desc"},select:{createdAt:true}});
+      if((!previous||Date.now()-previous.createdAt.getTime()>60_000)&&((parsed.data.content!==undefined && parsed.data.content!==old.content)||(parsed.data.title!==undefined && parsed.data.title!==old.title))) await tx.noteRevision.create({data:{noteId:id,title:old.title,content:old.content}});
+      return tx.note.findUnique({where:{id},include:{revisions:{select:{id:true,createdAt:true,title:true},orderBy:{createdAt:"desc"},take:30}}});
     });
     return R.json(note);
   } catch(e) {
