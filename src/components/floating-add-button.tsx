@@ -1,22 +1,24 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useGlobal } from "@/components/global-providers";
 
 export function FloatingAddButton() {
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const { openTaskForm } = useGlobal();
 
-  if (status !== "authenticated") {
+  if (status !== "authenticated" || pathname === "/notes") {
     return null;
   }
 
   return (
     <motion.button
       onClick={openTaskForm}
-      className="fixed bottom-6 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 active:scale-95 transition-all"
+      className="fixed bottom-24 right-4 sm:right-6 z-40 flex lg:hidden h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 active:scale-95 transition-all"
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       initial={{ scale: 0, opacity: 0 }}

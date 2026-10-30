@@ -461,6 +461,7 @@ export function TaskDetailPanel({
                 />
               </div>
 
+              {task.notes?.match(/^Source note: (\/notes\?note=[a-zA-Z0-9%_-]+)/)?.[1] && <a className="text-sm text-primary underline" href={task.notes.match(/^Source note: (\/notes\?note=[a-zA-Z0-9%_-]+)/)![1]}>Open source note →</a>}
               {/* Notes */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">

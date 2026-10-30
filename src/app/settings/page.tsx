@@ -366,7 +366,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Flowly" className="h-12 w-12 object-contain" />
+              <img src="/icon.svg" alt="Flowly" className="h-12 w-12 object-contain" />
               <div>
                 <p className="font-semibold">Flowly</p>
                 <p className="text-xs text-muted-foreground">Task & Project Management</p>

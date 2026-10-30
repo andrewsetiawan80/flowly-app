@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Command } from "cmdk";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  BookOpen,
   Search,
   Plus,
   Calendar,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface CommandPaletteProps {
@@ -37,6 +39,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
   const [tasks, setTasks] = useState<Array<{ id: string; title: string; listId: string }>>([]);
   const [lists, setLists] = useState<Array<{ id: string; name: string }>>([]);
 
+  const [notes, setNotes] = useState<Array<{id:string;title:string}>>([]);
   // Toggle command palette with Cmd+K
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -50,8 +53,13 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
       }
     };
 
+    const show = () => setOpen(true);
+    window.addEventListener("flowly-open-search", show);
     document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    return () => {
+      window.removeEventListener("flowly-open-search", show);
+      document.removeEventListener("keydown", down);
+    };
   }, []);
 
   // Fetch data when opened
@@ -63,10 +71,12 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
 
   const fetchData = async () => {
     try {
-      const [tasksRes, listsRes] = await Promise.all([
+      const [tasksRes, listsRes, notesRes] = await Promise.all([
         fetch("/api/tasks"),
         fetch("/api/lists"),
+        fetch("/api/notes"),
       ]);
+      if(notesRes.ok) setNotes((await notesRes.json()).notes || []);
       if (tasksRes.ok) {
         const data = await tasksRes.json();
         setTasks(data.tasks || []);
@@ -90,39 +100,9 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
   );
 
   return (
-    <>
-      {/* Trigger hint */}
-      <button
-        onClick={() => setOpen(true)}
-        className="hidden lg:flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-      >
-        <Search className="h-3 w-3" />
-        <span>Search...</span>
-        <kbd className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/10 dark:bg-white/10 rounded">
-          ⌘K
-        </kbd>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-              onClick={() => setOpen(false)}
-            />
-
-            {/* Command Palette */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ duration: 0.15 }}
-              className="fixed left-1/2 top-[20%] z-50 w-full max-w-lg -translate-x-1/2"
-            >
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent aria-describedby={undefined} className="p-0 gap-0 overflow-hidden [&>button]:hidden">
+        <DialogTitle className="sr-only">Search tasks and projects</DialogTitle>
               <Command
                 className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden"
                 loop
@@ -130,12 +110,14 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                 <div className="flex items-center gap-3 px-4 border-b border-black/5 dark:border-white/5">
                   <Search className="h-4 w-4 text-muted-foreground" />
                   <Command.Input
+                    aria-label="Search tasks and projects"
                     value={search}
                     onValueChange={setSearch}
                     placeholder="Type a command or search..."
                     className="flex-1 h-14 bg-transparent text-base outline-none placeholder:text-muted-foreground"
                   />
                   <button
+                    aria-label="Close search"
                     onClick={() => setOpen(false)}
                     className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
@@ -143,7 +125,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                   </button>
                 </div>
 
-                <Command.List className="max-h-[400px] overflow-y-auto p-2">
+                <Command.List className="max-h-[55dvh] overflow-y-auto p-2">
                   <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
                     No results found.
                   </Command.Empty>
@@ -169,7 +151,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10 aria-selected:text-primary"
                     >
                       <Flame className="h-4 w-4" />
-                      <span>Dashboard</span>
+                      <span>Overview</span>
                     </Command.Item>
                     <Command.Item
                       onSelect={() => runCommand(() => router.push("/tasks"))}
@@ -201,6 +183,10 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                     </Command.Item>
                   </Command.Group>
 
+                  <Command.Group heading="Notes" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
+                    <Command.Item onSelect={()=>runCommand(()=>router.push("/notes"))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10"><BookOpen className="h-4 w-4"/>Open notes library</Command.Item>
+                    {search && notes.filter(n=>n.title.toLowerCase().includes(search.toLowerCase())).slice(0,8).map(n=><Command.Item key={n.id} value={n.title+" "+n.id} onSelect={()=>runCommand(()=>router.push(`/notes?note=${encodeURIComponent(n.id)}`))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10"><BookOpen className="h-4 w-4"/><span className="truncate">{n.title}</span></Command.Item>)}
+                  </Command.Group>
                   {/* Lists */}
                   {lists.length > 0 && (
                     <Command.Group heading="Lists" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
@@ -269,11 +255,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                   </div>
                 </div>
               </Command>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
-

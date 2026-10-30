@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Task, Priority } from "@prisma/client";
 import { TaskCard } from "@/components/task-card";
@@ -18,6 +18,8 @@ type TaskWithList = Task & {
 
 export default function TasksPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTaskId = searchParams.get("task");
   const { data: session, status } = useSession();
   const [tasks, setTasks] = useState<TaskWithList[]>([]);
   const [lists, setLists] = useState<Array<{ id: string; name: string }>>([]);
@@ -80,6 +82,15 @@ export default function TasksPage() {
       setLoading(false);
     }
   }, [status]);
+
+  useEffect(() => {
+    if (!requestedTaskId || loading) return;
+    const task = tasks.find(task => task.id === requestedTaskId);
+    if (task) {
+      setSelectedTask(task);
+      setIsDetailOpen(true);
+    }
+  }, [requestedTaskId, loading, tasks]);
 
   const handleCreateTask = async (data: {
     title: string;
@@ -205,7 +216,7 @@ export default function TasksPage() {
   const activeTasks = tasks.filter((t) => t.status !== "DONE");
   const completedTasks = tasks.filter((t) => t.status === "DONE");
   const overdueTasks = tasks.filter(
-    (t) => t.dueAt && new Date(t.dueAt) < new Date() && t.status !== "DONE"
+    (t) => t.dueAt && new Date(t.dueAt) < new Date(new Date().setHours(0, 0, 0, 0)) && t.status !== "DONE"
   );
 
   const stats = [
@@ -441,6 +452,7 @@ export default function TasksPage() {
         onClose={() => {
           setIsDetailOpen(false);
           setSelectedTask(null);
+          if (requestedTaskId) router.replace("/tasks", { scroll: false });
         }}
         onUpdate={handleUpdateTask}
         onDelete={handleDeleteTask}

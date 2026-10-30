@@ -8,6 +8,7 @@ import { TaskForm } from "@/components/task-form";
 
 interface GlobalContextType {
   openTaskForm: () => void;
+  openSearch: () => void;
   closeTaskForm: () => void;
 }
 
@@ -22,6 +23,7 @@ export function useGlobal() {
 }
 
 export function GlobalProviders({ children }: { children: ReactNode }) {
+  const openSearch = () => window.dispatchEvent(new Event("flowly-open-search"));
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [lists, setLists] = useState<Array<{ id: string; name: string }>>([]);
 
@@ -72,7 +74,7 @@ export function GlobalProviders({ children }: { children: ReactNode }) {
   };
 
   return (
-    <GlobalContext.Provider value={{ openTaskForm, closeTaskForm }}>
+    <GlobalContext.Provider value={{ openTaskForm, closeTaskForm, openSearch }}>
       <ToastProvider>
         {children}
         <CommandPalette onCreateTask={openTaskForm} />

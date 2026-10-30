@@ -21,7 +21,7 @@ import { TaskDetailPanel } from "@/components/task-detail-panel";
 import { EmptyState } from "@/components/empty-state";
 import { useToast } from "@/components/toast-provider";
 import { useGlobal } from "@/components/global-providers";
-import { triggerRefresh } from "@/lib/events";
+import { REFRESH_EVENTS, triggerRefresh } from "@/lib/events";
 
 type TaskWithList = Task & {
   list?: { id: string; name: string; color: string | null };
@@ -50,6 +50,7 @@ export default function Dashboard() {
   const { openTaskForm } = useGlobal();
   const [tasks, setTasks] = useState<TaskWithList[]>([]);
   const [lists, setLists] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<TaskWithList | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -74,6 +75,8 @@ export default function Dashboard() {
         fetch("/api/tasks", { credentials: "include" }),
         fetch("/api/lists", { credentials: "include" }),
       ]);
+      if (!tasksRes.ok || !listsRes.ok) throw new Error("Could not load your workspace. Please try again.");
+      setLoadError(null);
       if (tasksRes.ok) {
         const data = await tasksRes.json();
         setTasks(data.tasks || []);
@@ -83,7 +86,7 @@ export default function Dashboard() {
         setLists(data.lists || []);
       }
     } catch (error) {
-      setTasks([]);
+      setLoadError("Could not load your workspace. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,6 +99,11 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, [status, fetchTasks]);
+
+  useEffect(() => {
+    window.addEventListener(REFRESH_EVENTS.TASKS, fetchTasks);
+    return () => window.removeEventListener(REFRESH_EVENTS.TASKS, fetchTasks);
+  }, [fetchTasks]);
 
   const handleQuickAdd = async () => {
     if (!quickAddTitle.trim() || !lists[0]) return;
@@ -135,7 +143,8 @@ export default function Dashboard() {
         body: JSON.stringify({ id: taskId, status: completed ? "DONE" : "TODO" }),
       });
 
-      if (res.ok && completed) {
+      if (!res.ok) throw new Error("Could not update task");
+      if (completed) {
         showUndoToast(`"${task.title}" completed`, async () => {
           await fetch("/api/tasks", {
             method: "PATCH",
@@ -213,7 +222,7 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="h-16 bg-black/5 dark:bg-white/5 rounded-xl animate-pulse" />
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div className="h-64 bg-black/5 dark:bg-white/5 rounded-xl animate-pulse" />
           <div className="h-64 bg-black/5 dark:bg-white/5 rounded-xl animate-pulse" />
         </div>
@@ -227,7 +236,7 @@ export default function Dashboard() {
   const completedTasks = tasks.filter((t) => t.status === "DONE").length;
   const pendingTasks = tasks.filter((t) => t.status !== "DONE").length;
   const overdueTasks = tasks.filter(
-    (t) => t.dueAt && new Date(t.dueAt) < new Date() && t.status !== "DONE"
+    (t) => t.dueAt && new Date(t.dueAt) < new Date(new Date().setHours(0, 0, 0, 0)) && t.status !== "DONE"
   );
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -253,16 +262,18 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 3);
 
-  const userName = session?.user?.email?.split("@")[0] || "there";
+  const userName = session?.user?.name?.split(" ")[0] || session?.user?.email?.split("@")[0] || "there";
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-10">
+    <div className="space-y-6 pb-10">
+      {loadError && <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><span>{loadError}</span><Button variant="outline" onClick={fetchTasks}>Retry</Button></div>}
       {/* Header with Greeting */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="space-y-1"
       >
+        <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">{format(new Date(), "EEEE, MMMM d")}</p>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           {getGreeting()}, <span className="text-primary">{userName}</span>
         </h1>
@@ -286,7 +297,8 @@ export default function Dashboard() {
               value={quickAddTitle}
               onChange={(e) => setQuickAddTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleQuickAdd(); }}
-              placeholder="Quick add a task..."
+              aria-label="New task title"
+              placeholder="What needs to get done?"
               className="pl-10 h-11 bg-black/[0.02] dark:bg-white/[0.02]"
               disabled={quickAdding || lists.length === 0}
             />
@@ -299,6 +311,7 @@ export default function Dashboard() {
             Add
           </Button>
         </div>
+        {lists.length === 0 && <p className="mt-2 text-sm text-muted-foreground"><Link href="/lists/new" className="text-primary underline underline-offset-4">Create a project</Link> to add your first task.</p>}
       </motion.div>
 
       {/* Stats Cards */}
@@ -315,7 +328,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 + i * 0.05 }}
           >
-            <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/60 dark:bg-white/[0.02]">
+            <Card className="border-border bg-card">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2 rounded-lg", stat.bg)}>
@@ -323,7 +336,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-xl font-bold">{stat.value}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{stat.title}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{stat.title}</p>
                   </div>
                 </div>
               </CardContent>
@@ -332,71 +345,20 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Completion Progress */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-      >
-        <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/60 dark:bg-white/[0.02]">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Progress</span>
-              <span className="text-lg font-bold text-primary">{completionRate}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-black/[0.04] dark:bg-white/[0.04]">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${completionRate}%` }}
-                transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-                className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Quick Nav Shortcuts */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
-        {[
-          { href: "/board", label: "Board", icon: ListTodo, color: "text-violet-500", bg: "bg-violet-500/10" },
-          { href: "/table", label: "Table", icon: BarChart3, color: "text-blue-500", bg: "bg-blue-500/10" },
-          { href: "/calendar", label: "Calendar", icon: Calendar, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-          { href: "/stats", label: "Statistics", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-        ].map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Card className="border-black/[0.04] dark:border-white/[0.04] hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer group">
-              <CardContent className="p-3 flex items-center gap-2.5">
-                <div className={cn("p-1.5 rounded-lg", item.bg)}>
-                  <item.icon className={cn("h-4 w-4", item.color)} />
-                </div>
-                <span className="text-sm font-medium">{item.label}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </motion.div>
-
       {/* Task Lists */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         {/* Upcoming Tasks */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/60 dark:bg-white/[0.02] h-full">
+          <Card className="border-border bg-card h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <div className="h-6 w-1 bg-primary rounded-full" />
-                  Upcoming
+                  Next up
                 </CardTitle>
                 <Link href="/tasks">
                   <Button variant="ghost" size="sm" className="text-xs h-7">
@@ -425,13 +387,17 @@ export default function Dashboard() {
                     >
                       <div
                         className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openTaskDetail(task); } }}
                         onClick={() => openTaskDetail(task)}
                       >
                         <Checkbox
+                          aria-label={`Mark ${task.title} complete`}
                           checked={task.status === "DONE"}
                           onCheckedChange={(checked) => handleToggleTask(task.id, checked === true)}
                           onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5 h-4.5 w-4.5 rounded-md border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          className="mt-0.5 h-5 w-5 rounded-md border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         />
                         <div className="flex-1 min-w-0">
                           <p className={cn(
@@ -440,11 +406,11 @@ export default function Dashboard() {
                           )}>
                             {task.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                             {task.dueAt && (
                               <span className={cn(
                                 "flex items-center gap-0.5",
-                                new Date(task.dueAt) < new Date() && task.status !== "DONE" && "text-red-500"
+                                new Date(task.dueAt) < new Date(new Date().setHours(0, 0, 0, 0)) && task.status !== "DONE" && "text-red-500"
                               )}>
                                 <Calendar className="h-2.5 w-2.5" />
                                 {format(new Date(task.dueAt), "MMM d")}
@@ -486,9 +452,13 @@ export default function Dashboard() {
                   <div
                     key={task.id}
                     className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-white/5 cursor-pointer hover:bg-white/80 dark:hover:bg-white/10 transition-colors"
-                    onClick={() => openTaskDetail(task)}
+                    role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openTaskDetail(task); } }}
+                        onClick={() => openTaskDetail(task)}
                   >
                     <Checkbox
+                          aria-label={`Mark ${task.title} complete`}
                       checked={false}
                       onCheckedChange={() => handleToggleTask(task.id, true)}
                       onClick={(e) => e.stopPropagation()}
@@ -496,7 +466,7 @@ export default function Dashboard() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{task.title}</p>
-                      <p className="text-[10px] text-red-500 flex items-center gap-0.5">
+                      <p className="text-xs text-red-500 flex items-center gap-0.5">
                         <Calendar className="h-2.5 w-2.5" />
                         {format(new Date(task.dueAt!), "MMM d")}
                       </p>
@@ -508,11 +478,11 @@ export default function Dashboard() {
           )}
 
           {/* Recently Completed */}
-          <Card className="border-black/[0.04] dark:border-white/[0.04] bg-white/60 dark:bg-white/[0.02]">
+          <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <div className="h-5 w-1 bg-gradient-to-b from-emerald-500 to-green-500 rounded-full" />
-                Recently Done
+                Recently completed
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
@@ -523,7 +493,10 @@ export default function Dashboard() {
                   <div
                     key={task.id}
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer"
-                    onClick={() => openTaskDetail(task)}
+                    role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openTaskDetail(task); } }}
+                        onClick={() => openTaskDetail(task)}
                   >
                     <div className="h-4 w-4 rounded bg-emerald-500 flex items-center justify-center">
                       <CheckCircle2 className="h-2.5 w-2.5 text-white" />
