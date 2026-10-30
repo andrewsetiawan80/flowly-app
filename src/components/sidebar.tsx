@@ -96,7 +96,7 @@ export function Sidebar() {
   const content = (compact: boolean, mobile = false) => <>
     <div className={cn("flex h-20 shrink-0 items-center gap-3 px-5", compact && "justify-center px-2")}>
       <Link href="/dashboard" aria-label="Flowly overview" className="flex items-center gap-2.5">
-        <img src="/icon.svg" alt="" className="h-9 w-9 object-contain" />
+        <img src="/icon.svg?v=2" alt="" className="h-9 w-9 object-contain" />
         {!compact && <span className="text-xl font-semibold tracking-tight">flowly<span className="text-primary">.</span></span>}
       </Link>
     </div>

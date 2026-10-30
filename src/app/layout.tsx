@@ -16,10 +16,10 @@ export const metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/logo.png',
+    shortcut: '/favicon.ico?v=2',
+    apple: '/logo.png?v=2',
   },
 };
 
