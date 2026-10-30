@@ -1,5 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="120" fill="#15342F"/>
-  <path d="M140 302L222 220C244 198 280 198 302 220C324 242 324 278 302 300L266 336" stroke="#DBFBEA" stroke-width="42" stroke-linecap="round"/>
-  <path d="M372 210L290 292C268 314 232 314 210 292C188 270 188 234 210 212L246 176" stroke="#76DBB4" stroke-width="42" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="tile" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8875F4"/><stop offset="1" stop-color="#5145BE"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="176" y1="128" x2="334" y2="388" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#EBE9FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#tile)"/>
+  <g transform="rotate(-8 256 256)">
+    <path d="M176 116H292L366 190V358C366 380 348 398 326 398H176C154 398 136 380 136 358V156C136 134 154 116 176 116Z" fill="#302774" fill-opacity=".16" transform="translate(0 10)"/>
+    <path d="M176 110H292L366 184V352C366 374 348 392 326 392H176C154 392 136 374 136 352V150C136 128 154 110 176 110Z" fill="url(#paper)"/>
+    <path d="M292 110V160C292 173 303 184 316 184H366L292 110Z" fill="#C6BDF9"/>
+    <path d="M188 274L216 301C224 309 236 309 244 301L316 227" stroke="#6754D5" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>

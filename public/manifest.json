@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo.png?v=2",
+      "src": "/logo.png?v=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -28,7 +28,7 @@
       "url": "/tasks?new=true",
       "icons": [
         {
-          "src": "/logo.png?v=2",
+          "src": "/logo.png?v=3",
           "sizes": "512x512"
         }
       ]
@@ -40,7 +40,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/logo.png?v=2",
+          "src": "/logo.png?v=3",
           "sizes": "512x512"
         }
       ]
