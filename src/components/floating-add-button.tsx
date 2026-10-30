@@ -1,15 +1,17 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useGlobal } from "@/components/global-providers";
 
 export function FloatingAddButton() {
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const { openTaskForm } = useGlobal();
 
-  if (status !== "authenticated") {
+  if (status !== "authenticated" || pathname === "/notes") {
     return null;
   }
 

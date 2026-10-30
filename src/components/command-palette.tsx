@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Command } from "cmdk";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  BookOpen,
   Search,
   Plus,
   Calendar,
@@ -38,6 +39,7 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
   const [tasks, setTasks] = useState<Array<{ id: string; title: string; listId: string }>>([]);
   const [lists, setLists] = useState<Array<{ id: string; name: string }>>([]);
 
+  const [notes, setNotes] = useState<Array<{id:string;title:string}>>([]);
   // Toggle command palette with Cmd+K
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -69,10 +71,12 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
 
   const fetchData = async () => {
     try {
-      const [tasksRes, listsRes] = await Promise.all([
+      const [tasksRes, listsRes, notesRes] = await Promise.all([
         fetch("/api/tasks"),
         fetch("/api/lists"),
+        fetch("/api/notes"),
       ]);
+      if(notesRes.ok) setNotes((await notesRes.json()).notes || []);
       if (tasksRes.ok) {
         const data = await tasksRes.json();
         setTasks(data.tasks || []);
@@ -179,6 +183,10 @@ export function CommandPalette({ onCreateTask }: CommandPaletteProps) {
                     </Command.Item>
                   </Command.Group>
 
+                  <Command.Group heading="Notes" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
+                    <Command.Item onSelect={()=>runCommand(()=>router.push("/notes"))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10"><BookOpen className="h-4 w-4"/>Open notes library</Command.Item>
+                    {search && notes.filter(n=>n.title.toLowerCase().includes(search.toLowerCase())).slice(0,8).map(n=><Command.Item key={n.id} value={n.title+" "+n.id} onSelect={()=>runCommand(()=>router.push(`/notes?note=${encodeURIComponent(n.id)}`))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm aria-selected:bg-primary/10"><BookOpen className="h-4 w-4"/><span className="truncate">{n.title}</span></Command.Item>)}
+                  </Command.Group>
                   {/* Lists */}
                   {lists.length > 0 && (
                     <Command.Group heading="Lists" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">

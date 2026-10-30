@@ -12,7 +12,7 @@ import { MainContent } from "@/components/main-content";
 
 export const metadata = {
   title: "Flowly",
-  description: "Flowly - Your elegant task management companion",
+  description: "Flowly - Notes, tasks and projects in one place",
   manifest: "/manifest.json",
   icons: {
     icon: [

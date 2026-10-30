@@ -398,6 +398,7 @@ export default function ProjectDetailPage() {
                     {project.name}
                   </span>
                 </h1>
+                <Link href={`/notes?project=${project.id}`} className="mt-2 inline-block text-sm text-primary hover:underline">Project notes →</Link>
                 <p className="text-sm text-muted-foreground mt-1 font-medium">
                   {activeTasks.length} items · {completedTasks.length} completed
                 </p>
@@ -611,6 +612,7 @@ export default function ProjectDetailPage() {
                   {project.name}
                 </span>
               </h1>
+                <Link href={`/notes?project=${project.id}`} className="mt-2 inline-block text-sm text-primary hover:underline">Project notes →</Link>
               {project.description && (
                 <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
               )}

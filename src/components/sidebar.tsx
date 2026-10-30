@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { Home, CalendarDays, CalendarClock, ListTodo, Columns3, Table2, Calendar, GanttChart, BarChart3, Zap, Plus, Search, Settings, LogOut, PanelLeftClose, PanelLeftOpen, Menu, ChevronRight, Folder, CheckSquare, Sun, Moon } from "lucide-react";
+import { BookOpen, Home, CalendarDays, CalendarClock, ListTodo, Columns3, Table2, Calendar, GanttChart, BarChart3, Zap, Plus, Search, Settings, LogOut, PanelLeftClose, PanelLeftOpen, Menu, ChevronRight, Folder, CheckSquare, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { REFRESH_EVENTS } from "@/lib/events";
@@ -24,6 +24,7 @@ const sections = [
     { href: "/myday", label: "My day", icon: CalendarDays },
     { href: "/today", label: "Next 7 days", icon: CalendarClock },
     { href: "/tasks", label: "All tasks", icon: ListTodo },
+    { href: "/notes", label: "Notes", icon: BookOpen },
   ] },
   { label: "Plan", items: [
     { href: "/board", label: "Board", icon: Columns3 },
@@ -103,7 +104,7 @@ export function Sidebar() {
       <button onClick={() => { setMobileOpen(false); openTaskForm(); }} aria-label="Add task" title="Add task" className={cn("flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90", compact && "px-2")}>
         <Plus className="h-4 w-4 shrink-0" />{!compact && "Add task"}
       </button>
-      <button onClick={() => { setMobileOpen(false); openSearch(); }} aria-label="Search tasks and projects" title="Search tasks and projects" className={cn("flowly-nav w-full", compact && "justify-center")}>
+      <button onClick={() => { setMobileOpen(false); openSearch(); }} aria-label="Search tasks, notes and projects" title="Search tasks, notes and projects" className={cn("flowly-nav w-full", compact && "justify-center")}>
         <Search className="h-4 w-4 shrink-0" />{!compact && <><span>Search anything</span><kbd className="ml-auto text-[11px] text-muted-foreground">⌘K</kbd></>}
       </button>
     </div>
@@ -147,7 +148,7 @@ export function Sidebar() {
     <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b bg-card px-4 lg:hidden">
       <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="p-2 -ml-2 rounded-md hover:bg-muted"><Menu className="h-5 w-5" /></button>
       <Link href="/dashboard" className="font-semibold tracking-tight">flowly<span className="text-primary">.</span></Link>
-      <button onClick={openSearch} aria-label="Search tasks and projects" className="p-2 -mr-2 rounded-md hover:bg-muted"><Search className="h-5 w-5" /></button>
+      <button onClick={openSearch} aria-label="Search tasks, notes and projects" className="p-2 -mr-2 rounded-md hover:bg-muted"><Search className="h-5 w-5" /></button>
     </header>
     <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
       <DialogContent aria-describedby={undefined} className="left-0 top-0 h-dvh max-h-none w-[300px] max-w-[88vw] translate-x-0 translate-y-0 rounded-none p-0 gap-0 flex flex-col bg-card">

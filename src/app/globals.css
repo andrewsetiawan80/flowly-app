@@ -368,3 +368,30 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 }
+
+/* Notes share Flowly's theme; legacy editor tokens are scoped to this module. */
+.notes-surface {
+ --accent-primary: hsl(var(--primary)); --accent-secondary: hsl(var(--primary));
+ --bg-secondary: hsl(var(--card)); --bg-tertiary: hsl(var(--muted));
+ --text-primary: hsl(var(--foreground)); --text-secondary: hsl(var(--muted-foreground));
+ --text-tertiary: hsl(var(--muted-foreground)); --border-subtle: hsl(var(--border)); --border-default: hsl(var(--border));
+}
+.notes-surface .tiptap { padding: 1.25rem; line-height: 1.75; overflow-wrap: anywhere; }
+.notes-surface .tiptap p { margin: .6em 0; }
+.notes-surface .tiptap h1 { font-size: 1.8rem; font-weight: 650; margin: 1em 0 .5em; }
+.notes-surface .tiptap h2 { font-size: 1.4rem; font-weight: 650; margin: 1em 0 .5em; }
+.notes-surface .tiptap h3 { font-size: 1.15rem; font-weight: 650; }
+.notes-surface .tiptap ul { list-style: disc; padding-left: 1.5em; }
+.notes-surface .tiptap ol { list-style: decimal; padding-left: 1.5em; }
+.notes-surface .tiptap ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.notes-surface .tiptap li[data-type="taskItem"] { display:flex; gap:.75em; }
+.notes-surface .tiptap li[data-type="taskItem"] > div { flex:1; min-width:0; }
+.notes-surface .tiptap blockquote { border-left: 3px solid hsl(var(--primary)); padding-left: 1em; color:hsl(var(--muted-foreground)); }
+.notes-surface .tiptap pre { background:hsl(var(--muted)); border-radius:.5rem; padding:1rem; overflow:auto; font-size:.85rem; white-space:pre-wrap; }
+.notes-surface .tiptap code { font-family:monospace; background:hsl(var(--muted)); }
+.notes-surface .tiptap table { border-collapse:collapse; width:100%; table-layout:fixed; }
+.notes-surface .tiptap td, .notes-surface .tiptap th { border:1px solid hsl(var(--border)); padding:.5rem; vertical-align:top; }
+.notes-surface .tiptap th { background:hsl(var(--muted)); }
+.notes-surface .tiptap img { max-width:100%; height:auto; border-radius:.5rem; }
+.notes-surface .tiptap a { color:hsl(var(--primary)); text-decoration:underline; }
+.notes-surface .tiptap hr { margin:1.5em 0; }

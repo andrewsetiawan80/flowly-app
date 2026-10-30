@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, ListTodo, CalendarDays, Calendar, BarChart3 } from "lucide-react";
+import { BookOpen, Home, ListTodo, CalendarDays, Calendar, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,7 +10,7 @@ const navItems = [
   { href: "/tasks", icon: ListTodo, label: "Tasks" },
   { href: "/myday", icon: CalendarDays, label: "My day" },
   { href: "/calendar", icon: Calendar, label: "Calendar" },
-  { href: "/stats", icon: BarChart3, label: "Insights" },
+  { href: "/notes", icon: BookOpen, label: "Notes" },
 ];
 
 export function MobileBottomNav() {
