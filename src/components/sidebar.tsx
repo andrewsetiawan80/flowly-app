@@ -65,6 +65,8 @@ export function Sidebar() {
   const { openTaskForm, openSearch } = useGlobal();
   const { workspaces, activeWorkspace, setActiveWorkspaceId } = useWorkspace();
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -135,7 +137,7 @@ export function Sidebar() {
       <div className={cn("flex items-center gap-1 px-1", compact && "flex-col")}>
         {!compact && <span className="min-w-0 flex-1 truncate px-2 text-xs text-muted-foreground">{session?.user?.name || session?.user?.email?.split("@")[0]}</span>}
         <NotificationCenter />
-        <button onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} title="Toggle appearance" aria-label="Toggle appearance" className="rounded-md p-2 hover:bg-muted">{resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+        <button onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} title="Toggle appearance" aria-label="Toggle appearance" className="rounded-md p-2 hover:bg-muted">{mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
         <button onClick={() => signOut({ callbackUrl: "/signin" })} title="Sign out" aria-label="Sign out" className="rounded-md p-2 hover:bg-muted"><LogOut className="h-4 w-4" /></button>
       </div>
     </div>
