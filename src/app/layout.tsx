@@ -14,18 +14,17 @@ export const metadata = {
   title: "Flowly",
   description: "Flowly - Your elegant task management companion",
   manifest: "/manifest.json",
-  themeColor: "#f97316",
   icons: {
     icon: [
-      { url: '/logo.png', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
     ],
-    shortcut: '/logo.png',
+    shortcut: '/favicon.ico',
     apple: '/logo.png',
   },
 };
 
 export const viewport = {
-  themeColor: "#f97316",
+  themeColor: "#141820",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -47,7 +46,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Flowly" />
       </head>
-      <body className="noise-overlay overflow-x-hidden">
+      <body className="overflow-x-hidden">
         <AuthSessionProvider>
           <ThemeProvider>
             <GlobalProviders>
@@ -55,6 +54,7 @@ export default async function RootLayout({
                 <SidebarProvider>
                   {session?.user ? (
                     <div className="min-h-screen overflow-x-hidden">
+                      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-card focus:p-3">Skip to content</a>
                       <Sidebar />
                       <MainContent>{children}</MainContent>
                       <FloatingAddButton />

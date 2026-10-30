@@ -101,6 +101,7 @@ export function NotificationCenter() {
     <div className="relative" ref={panelRef}>
       {/* Bell Button */}
       <button
+        aria-label="Notifications"
         onClick={() => { setOpen(!open); setHasNew(false); }}
         className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
       >
@@ -117,7 +118,7 @@ export function NotificationCenter() {
             initial={{ opacity: 0, y: 5, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.97 }}
-            className="absolute right-0 top-full mt-2 w-80 max-h-[70vh] bg-white dark:bg-gray-900 rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden z-50"
+            className="fixed inset-x-4 top-16 sm:left-auto sm:right-6 sm:w-80 max-h-[70vh] bg-white dark:bg-gray-900 rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden z-50"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-black/5 dark:border-white/5">

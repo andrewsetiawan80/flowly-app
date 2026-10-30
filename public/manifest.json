@@ -4,8 +4,8 @@
   "description": "Task & Project Management",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0f0f14",
-  "theme_color": "#22b8cf",
+  "background_color": "#141820",
+  "theme_color": "#141820",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -15,7 +15,10 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "screenshots": [],
   "shortcuts": [
     {
@@ -23,14 +26,24 @@
       "short_name": "New",
       "description": "Create a new task",
       "url": "/tasks?new=true",
-      "icons": [{ "src": "/logo.png", "sizes": "512x512" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "512x512"
+        }
+      ]
     },
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.png", "sizes": "512x512" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "512x512"
+        }
+      ]
     }
   ]
 }

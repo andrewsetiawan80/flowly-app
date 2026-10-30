@@ -74,7 +74,7 @@ export default function SignIn() {
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
               whileHover={{ scale: 1.05 }}
             >
-              <img src="/logo.png" alt="Flowly" className="h-20 w-20 object-contain" />
+              <img src="/icon.svg" alt="Flowly" className="h-20 w-20 object-contain" />
             </motion.div>
             <motion.div 
               className="space-y-3"
